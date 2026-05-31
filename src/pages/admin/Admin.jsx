@@ -1,0 +1,129 @@
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard, UtensilsCrossed, CalendarDays, ShoppingBag,
+  Star, Images, LogOut, Menu, X, ChevronRight, Bell
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useAuth } from '../../lib/AuthContext';
+import { signOut } from '../../lib/supabase';
+import AdminOverview    from '../../components/admin/AdminOverview';
+import AdminMenu        from '../../components/admin/AdminMenu';
+import AdminReservations from '../../components/admin/AdminReservations';
+import AdminOrders      from '../../components/admin/AdminOrders';
+import AdminReviews     from '../../components/admin/AdminReviews';
+import AdminGallery     from '../../components/admin/AdminGallery';
+import './Admin.css';
+
+const NAV = [
+  { to: '/admin',              label: 'Overview',     icon: <LayoutDashboard size={18} />, end: true },
+  { to: '/admin/menu',         label: 'Menu Items',   icon: <UtensilsCrossed size={18} /> },
+  { to: '/admin/reservations', label: 'Reservations', icon: <CalendarDays size={18} /> },
+  { to: '/admin/orders',       label: 'Orders',       icon: <ShoppingBag size={18} /> },
+  { to: '/admin/reviews',      label: 'Reviews',      icon: <Star size={18} /> },
+  { to: '/admin/gallery',      label: 'Gallery',      icon: <Images size={18} /> },
+];
+
+export default function Admin() {
+  const { user, isAdmin, loading } = useAuth();
+  const [sidebarOpen, setSidebar]  = useState(false);
+  const navigate                   = useNavigate();
+  const { pathname }               = useLocation();
+
+  useEffect(() => {
+    if (!loading && (!user || !isAdmin)) {
+      toast.error('Admin access required.');
+      navigate('/auth');
+    }
+  }, [user, isAdmin, loading, navigate]);
+
+  const handleLogout = async () => {
+    await signOut();
+    toast.success('Signed out.');
+    navigate('/');
+  };
+
+  if (loading) return <div className="admin-loading"><div className="spinner" /></div>;
+  if (!user || !isAdmin) return null;
+
+  return (
+    <div className="admin-shell">
+      {/* Sidebar */}
+      <aside className={`admin-sidebar ${sidebarOpen ? 'admin-sidebar--open' : ''}`}>
+        <div className="admin-sidebar__logo">
+          <Link to="/" style={{ display:'flex', flexDirection:'column', alignItems:'center', textDecoration:'none' }}>
+            <img src="/logo.png" alt="BurmeseBites" className="admin-sidebar__logo-img" />
+          </Link>
+          <div className="admin-sidebar__logo-sub" style={{ textAlign:'center', marginTop:4 }}>Admin Panel</div>
+        </div>
+
+        <nav className="admin-nav">
+          {NAV.map(({ to, label, icon, end }) => {
+            const active = end ? pathname === to : pathname.startsWith(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`admin-nav__item ${active ? 'admin-nav__item--active' : ''}`}
+                onClick={() => setSidebar(false)}
+              >
+                {icon}
+                <span>{label}</span>
+                {active && <ChevronRight size={14} className="admin-nav__arrow" />}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="admin-sidebar__footer">
+          <div className="admin-sidebar__user">
+            <div className="admin-sidebar__avatar">
+              {user.email.charAt(0).toUpperCase()}
+            </div>
+            <div className="admin-sidebar__user-info">
+              <p>{user.user_metadata?.full_name || 'Admin'}</p>
+              <span>{user.email}</span>
+            </div>
+          </div>
+          <button className="admin-logout" onClick={handleLogout}>
+            <LogOut size={16} /> Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {sidebarOpen && (
+        <div className="admin-overlay" onClick={() => setSidebar(false)} />
+      )}
+
+      {/* Main content */}
+      <div className="admin-main">
+        {/* Top bar */}
+        <header className="admin-topbar">
+          <button className="admin-topbar__toggle" onClick={() => setSidebar(v => !v)}>
+            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          <div className="admin-topbar__title">
+            {NAV.find(n => n.end ? pathname === n.to : pathname.startsWith(n.to))?.label || 'Dashboard'}
+          </div>
+          <div className="admin-topbar__right">
+            <Link to="/" className="admin-topbar__view-site">
+              View Site
+            </Link>
+          </div>
+        </header>
+
+        {/* Page content */}
+        <div className="admin-content">
+          <Routes>
+            <Route index                    element={<AdminOverview />} />
+            <Route path="menu"              element={<AdminMenu />} />
+            <Route path="reservations"      element={<AdminReservations />} />
+            <Route path="orders"            element={<AdminOrders />} />
+            <Route path="reviews"           element={<AdminReviews />} />
+            <Route path="gallery"           element={<AdminGallery />} />
+          </Routes>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,132 @@
+.reservation-page__body { padding: 64px 0 96px; }
+
+.reservation-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 64px;
+  align-items: start;
+}
+
+/* Info side */
+.reservation-info { display: flex; flex-direction: column; gap: 24px; }
+
+.reservation-info__items { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+
+.reservation-info__item {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.reservation-info__item svg { color: var(--amber); flex-shrink: 0; margin-top: 2px; }
+.reservation-info__item strong { font-size: 13px; font-weight: 600; color: var(--charcoal); display: block; margin-bottom: 4px; }
+.reservation-info__item p { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin: 0; }
+
+.reservation-info__img {
+  border-radius: var(--radius);
+  overflow: hidden;
+  height: 240px;
+}
+.reservation-info__img img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Form card */
+.reservation-form-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-warm);
+}
+.reservation-form-card__header {
+  background: var(--amber);
+  padding: 28px 32px;
+  color: #fff;
+}
+.reservation-form-card__header h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.reservation-form-card__header p { font-size: 13.5px; opacity: 0.85; }
+
+.reservation-form {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.reservation-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Time slots */
+.time-slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+.time-slot {
+  padding: 8px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--brown-light);
+  background: var(--ivory);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+.time-slot:hover { border-color: var(--amber); color: var(--amber-dark); background: var(--amber-pale); }
+.time-slot--active { background: var(--amber); color: #fff; border-color: var(--amber); font-weight: 500; }
+.time-slots__hint { font-size: 11.5px; color: #c27a2a; margin-top: 4px; }
+
+.reservation-submit { width: 100%; justify-content: center; padding: 14px; font-size: 15px; margin-top: 4px; }
+.reservation-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+/* Success state */
+.reservation-success {
+  max-width: 560px;
+  margin: 48px auto 80px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.reservation-success__icon { color: var(--jade); margin-bottom: 8px; }
+.reservation-success h2 { font-family: var(--font-display); font-size: 32px; color: var(--charcoal); }
+.reservation-success p { font-size: 15px; color: var(--text-muted); line-height: 1.7; }
+.reservation-success p strong { color: var(--charcoal); }
+.reservation-success__sub { font-size: 13.5px; background: var(--jade-pale); color: var(--jade-dark); padding: 12px 20px; border-radius: var(--radius-sm); border: 1px solid rgba(42,107,82,0.2); }
+
+@media (max-width: 900px) {
+  .reservation-layout { grid-template-columns: 1fr; gap: 40px; }
+}
+@media (max-width: 520px) {
+  .reservation-form { padding: 20px; }
+  .reservation-form__row { grid-template-columns: 1fr; }
+  .time-slots { grid-template-columns: repeat(3, 1fr); }
+  .reservation-form-card__header { padding: 20px; }
+}
+
+/* ── Sign-in hint ── */
+.reservation-signin-hint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 9px 13px;
+  background: rgba(232, 168, 74, 0.1);
+  border: 1px solid rgba(232, 168, 74, 0.3);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+}
+.reservation-signin-hint a {
+  color: var(--amber-dark, #b8762b);
+  font-weight: 600;
+  text-decoration: underline;
+}
