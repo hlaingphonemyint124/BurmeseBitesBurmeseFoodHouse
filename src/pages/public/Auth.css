@@ -6,7 +6,6 @@
   position: relative;
   padding: 40px 20px;
 }
-
 .auth-page__bg {
   position: fixed;
   inset: 0;
@@ -17,51 +16,46 @@
 .auth-page__overlay {
   position: fixed;
   inset: 0;
-  background: rgba(30,26,20,0.82);
+  background: rgba(30,26,20,0.85);
 }
 
+/* ── Container ── */
 .auth-container {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
+/* ── Logo ── */
 .auth-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 32px;
-  color: #fff;
+  justify-content: center;
   text-decoration: none;
 }
-.auth-logo__main {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--amber-light);
-  line-height: 1;
-}
-.auth-logo__sub {
-  font-size: 11px;
-  color: rgba(255,255,255,0.5);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-top: 2px;
+.auth-logo__img {
+  height: 90px;
+  width: 90px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+  border-radius: 50%;
 }
 
+/* ── Card ── */
 .auth-card {
   width: 100%;
   background: #fff;
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
 }
 
+/* ── Tabs ── */
 .auth-tabs {
   display: flex;
   border-bottom: 1px solid var(--border);
@@ -89,13 +83,20 @@
   border-bottom-color: var(--amber);
 }
 
+/* ── Form ── */
 .auth-form {
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
-.auth-form__header { margin-bottom: 4px; }
+.auth-form--signup {
+  max-height: 75vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--amber-pale) transparent;
+}
+.auth-form__header { margin-bottom: 2px; }
 .auth-form__header h2 {
   font-family: var(--font-display);
   font-size: 22px;
@@ -104,6 +105,40 @@
 }
 .auth-form__header p { font-size: 13px; color: var(--text-muted); }
 
+/* ── Benefits strip ── */
+.auth-benefits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 14px;
+  background: var(--ivory);
+  border-radius: 10px;
+  border: 1px solid var(--amber-pale);
+}
+.auth-benefit {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+.auth-benefit__icon {
+  color: var(--amber-dark);
+  flex-shrink: 0;
+}
+
+/* ── Field hints ── */
+.auth-field-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.auth-required { color: var(--crimson, #c0392b); margin-left: 1px; }
+.auth-optional  { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+
+/* ── Password input ── */
 .auth-form__pwd { position: relative; }
 .auth-form__pwd .form-input { padding-right: 44px; }
 .auth-form__pwd-toggle {
@@ -116,6 +151,49 @@
 }
 .auth-form__pwd-toggle:hover { color: var(--amber-dark); }
 
+/* ── Password strength ── */
+.auth-pwd-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.auth-pwd-strength__bar {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+.auth-pwd-strength__segment {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  transition: background 0.3s;
+}
+
+/* ── Terms checkbox ── */
+.auth-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  line-height: 1.5;
+}
+.auth-terms input[type="checkbox"] {
+  margin-top: 2px;
+  accent-color: var(--amber-dark);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.auth-terms a {
+  color: var(--amber-dark);
+  text-decoration: underline;
+}
+
+/* ── Submit ── */
 .auth-submit {
   width: 100%;
   justify-content: center;
@@ -139,9 +217,16 @@
   text-decoration: underline;
 }
 
+/* ── Back link ── */
 .auth-back {
   font-size: 13px;
   color: rgba(255,255,255,0.55);
   transition: color 0.2s;
 }
 .auth-back:hover { color: var(--amber-light); }
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .auth-form { padding: 22px 20px; }
+  .auth-benefits { grid-template-columns: 1fr; }
+}

@@ -117,3 +117,33 @@ export const getDashboardStats = async () => {
     menuItems:    menuItems.data    || [],
   };
 };
+
+// ─── Payment Slips ────────────────────────────────────────────────────────────
+export const uploadPaymentSlip = async (orderId, file) => {
+  const ext = file.name.split('.').pop();
+  const path = `payment-slips/${orderId}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('payment-slips')
+    .upload(path, file, { upsert: true });
+  if (error) return { data: null, error };
+  const { data: { publicUrl } } = supabase.storage.from('payment-slips').getPublicUrl(path);
+  return { data: { path, publicUrl }, error: null };
+};
+
+export const updateOrderPayment = async (id, slipUrl, method) =>
+  supabase.from('orders')
+    .update({ payment_slip_url: slipUrl, payment_method: method, payment_status: 'pending_review' })
+    .eq('id', id).select();
+
+export const confirmPayment = async (id) =>
+  supabase.from('orders')
+    .update({ payment_status: 'confirmed', status: 'preparing' })
+    .eq('id', id).select();
+
+export const rejectPayment = async (id) =>
+  supabase.from('orders')
+    .update({ payment_status: 'rejected', status: 'received' })
+    .eq('id', id).select();
+
+export const getOrderByIdPoll = async (id) =>
+  supabase.from('orders').select('id, status, payment_status, payment_slip_url, payment_method').eq('id', id).single();

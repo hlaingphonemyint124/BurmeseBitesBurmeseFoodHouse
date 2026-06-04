@@ -1,0 +1,320 @@
+/* ── Admin Tab Bar ──────────────────────────────────────────────────────── */
+.admin-tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+}
+.admin-tab {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  background: none;
+  border-radius: 0;
+}
+.admin-tab:hover { color: var(--amber-dark); }
+.admin-tab--active {
+  color: var(--amber-dark);
+  border-bottom-color: var(--amber);
+  font-weight: 600;
+}
+.admin-tab__badge {
+  background: var(--amber);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+  min-width: 18px;
+  text-align: center;
+  animation: pulse-badge 1.5s ease-in-out infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.15); }
+}
+
+/* ── Pay Status Badges ──────────────────────────────────────────────────── */
+.pay-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.pay-status--unpaid    { background: #f5f5f5;    color: #777;             border: 1px solid #ddd; }
+.pay-status--pending   { background: #fff7e6;    color: var(--amber-dark); border: 1px solid var(--amber-light); }
+.pay-status--confirmed { background: var(--jade-pale); color: var(--jade-dark); border: 1px solid var(--jade-light); }
+.pay-status--rejected  { background: #fee8e8;    color: #c0392b;          border: 1px solid #f5b7b1; }
+
+/* ── Slip Eye Button ────────────────────────────────────────────────────── */
+.slip-eye-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ivory);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--amber-dark);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.slip-eye-btn:hover { background: var(--amber-pale); border-color: var(--amber); }
+
+/* ── Payment Slips Panel ────────────────────────────────────────────────── */
+.payment-slips-panel { padding-bottom: 40px; }
+
+.payments-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  text-align: center;
+}
+.payments-empty__icon { color: var(--jade); opacity: 0.6; }
+.payments-empty p { font-family: var(--font-display); font-size: 16px; color: var(--brown); }
+.payments-empty__sub { font-size: 13px; color: var(--text-muted); font-family: var(--font-body); }
+
+.payments-pending-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-dark);
+  background: var(--amber-pale);
+  border: 1px solid var(--amber-light);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Payment Slip Card Grid ─────────────────────────────────────────────── */
+.payment-slip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.payment-slip-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-warm);
+  transition: var(--transition);
+}
+.payment-slip-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(194,122,42,0.15); }
+.payment-slip-card__img-wrap {
+  position: relative;
+  height: 180px;
+  background: var(--ivory);
+  cursor: pointer;
+  overflow: hidden;
+}
+.payment-slip-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+.payment-slip-card__img-wrap:hover .payment-slip-card__img { transform: scale(1.04); }
+.payment-slip-card__no-img {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border);
+}
+.payment-slip-card__zoom {
+  position: absolute;
+  inset: 0;
+  background: rgba(30,26,20,0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  transition: background 0.25s;
+}
+.payment-slip-card__img-wrap:hover .payment-slip-card__zoom { background: rgba(30,26,20,0.45); }
+.payment-slip-card__info {
+  padding: 12px 16px 8px;
+}
+.payment-slip-card__name { font-weight: 600; font-size: 14px; color: var(--charcoal); margin-bottom: 4px; }
+.payment-slip-card__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.payment-slip-card__method {
+  font-size: 11px;
+  background: var(--ivory);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 7px;
+  color: var(--brown);
+  font-weight: 500;
+}
+.payment-slip-card__amount {
+  font-weight: 700;
+  color: var(--amber-dark);
+  font-size: 14px;
+}
+.payment-slip-card__time { font-size: 11px; color: var(--text-muted); }
+.payment-slip-card__actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px 14px;
+}
+
+/* ── Slip Action Buttons ─────────────────────────────────────────────────── */
+.slip-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  flex: 1;
+  justify-content: center;
+  border: none;
+}
+.slip-action-btn--confirm {
+  background: var(--jade);
+  color: #fff;
+}
+.slip-action-btn--confirm:hover { background: var(--jade-dark); transform: translateY(-1px); }
+.slip-action-btn--reject {
+  background: #fee8e8;
+  color: #c0392b;
+  border: 1px solid #f5b7b1;
+}
+.slip-action-btn--reject:hover { background: #c0392b; color: #fff; transform: translateY(-1px); }
+.slip-action-btn--lg { padding: 11px 20px; font-size: 13px; }
+
+/* ── Reviewed Section ────────────────────────────────────────────────────── */
+.payment-reviewed-section { margin-top: 24px; }
+.payment-reviewed-section__title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--brown);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Slip Modal ──────────────────────────────────────────────────────────── */
+.slip-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30,26,20,0.65);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fade-in 0.2s ease;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.slip-modal {
+  background: #fff;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slide-up {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.slip-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.slip-modal__header h3 { font-family: var(--font-display); font-size: 18px; color: var(--charcoal); margin-bottom: 2px; }
+.slip-modal__header p  { font-size: 12px; color: var(--text-muted); }
+.slip-modal__close {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--ivory);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  border: none;
+}
+.slip-modal__close:hover { background: var(--amber-pale); color: var(--amber-dark); }
+.slip-modal__body { padding: 20px 24px; }
+.slip-modal__img-wrap {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  background: var(--ivory);
+}
+.slip-modal__img { width: 100%; max-height: 320px; object-fit: contain; display: block; }
+.slip-modal__no-img {
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.slip-modal__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.slip-modal__detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.slip-modal__detail-row:last-child { border-bottom: none; }
+.slip-modal__detail-row span { color: var(--text-muted); }
+.slip-modal__detail-row strong { color: var(--charcoal); }
+.slip-modal__footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+}

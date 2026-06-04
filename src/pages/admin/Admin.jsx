@@ -1,32 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, UtensilsCrossed, CalendarDays, ShoppingBag,
-  Star, Images, LogOut, Menu, X, ChevronRight, Bell
+  LayoutDashboard, UtensilsCrossed, CalendarDays,
+  Star, Images, LogOut, Menu, X, ChevronRight, ShoppingCart,
+  Settings, Sun, Moon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../lib/AuthContext';
-import { signOut } from '../../lib/supabase';
+import { useTheme } from '../../lib/ThemeContext';
+import { signOut, getAllOrders } from '../../lib/supabase';
 import AdminOverview    from '../../components/admin/AdminOverview';
 import AdminMenu        from '../../components/admin/AdminMenu';
-import AdminReservations from '../../components/admin/AdminReservations';
 import AdminOrders      from '../../components/admin/AdminOrders';
+import AdminReservations from '../../components/admin/AdminReservations';
 import AdminReviews     from '../../components/admin/AdminReviews';
 import AdminGallery     from '../../components/admin/AdminGallery';
+import AdminSettings    from '../../components/admin/AdminSettings';
+import '../../components/admin/AdminSettings.css';
 import './Admin.css';
-
-const NAV = [
-  { to: '/admin',              label: 'Overview',     icon: <LayoutDashboard size={18} />, end: true },
-  { to: '/admin/menu',         label: 'Menu Items',   icon: <UtensilsCrossed size={18} /> },
-  { to: '/admin/reservations', label: 'Reservations', icon: <CalendarDays size={18} /> },
-  { to: '/admin/orders',       label: 'Orders',       icon: <ShoppingBag size={18} /> },
-  { to: '/admin/reviews',      label: 'Reviews',      icon: <Star size={18} /> },
-  { to: '/admin/gallery',      label: 'Gallery',      icon: <Images size={18} /> },
-];
 
 export default function Admin() {
   const { user, isAdmin, loading } = useAuth();
+  const { toggle: toggleTheme, isDark } = useTheme();
   const [sidebarOpen, setSidebar]  = useState(false);
+  const [pendingPayCount, setPendingPayCount] = useState(0);
   const navigate                   = useNavigate();
   const { pathname }               = useLocation();
 
@@ -37,6 +34,20 @@ export default function Admin() {
     }
   }, [user, isAdmin, loading, navigate]);
 
+  // Poll pending payment count for sidebar badge
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    const fetchPending = () => {
+      getAllOrders().then(({ data }) => {
+        const count = (data || []).filter(o => o.payment_status === 'pending_review').length;
+        setPendingPayCount(count);
+      });
+    };
+    fetchPending();
+    const interval = setInterval(fetchPending, 15000); // refresh every 15s
+    return () => clearInterval(interval);
+  }, [user, isAdmin]);
+
   const handleLogout = async () => {
     await signOut();
     toast.success('Signed out.');
@@ -45,6 +56,15 @@ export default function Admin() {
 
   if (loading) return <div className="admin-loading"><div className="spinner" /></div>;
   if (!user || !isAdmin) return null;
+
+  const NAV = [
+    { to: '/admin',              label: 'Overview',       icon: <LayoutDashboard size={18} />, end: true },
+    { to: '/admin/orders',       label: 'Orders & Pay',   icon: <ShoppingCart size={18} />, badge: pendingPayCount },
+    { to: '/admin/menu',         label: 'Menu Items',     icon: <UtensilsCrossed size={18} /> },
+    { to: '/admin/reservations', label: 'Reservations',   icon: <CalendarDays size={18} /> },
+    { to: '/admin/reviews',      label: 'Reviews',        icon: <Star size={18} /> },
+    { to: '/admin/gallery',      label: 'Gallery',        icon: <Images size={18} /> },
+  ];
 
   return (
     <div className="admin-shell">
@@ -58,7 +78,7 @@ export default function Admin() {
         </div>
 
         <nav className="admin-nav">
-          {NAV.map(({ to, label, icon, end }) => {
+          {NAV.map(({ to, label, icon, end, badge }) => {
             const active = end ? pathname === to : pathname.startsWith(to);
             return (
               <Link
@@ -69,7 +89,10 @@ export default function Admin() {
               >
                 {icon}
                 <span>{label}</span>
-                {active && <ChevronRight size={14} className="admin-nav__arrow" />}
+                {badge > 0 && (
+                  <span className="admin-nav__badge">{badge}</span>
+                )}
+                {active && !badge && <ChevronRight size={14} className="admin-nav__arrow" />}
               </Link>
             );
           })}
@@ -106,9 +129,21 @@ export default function Admin() {
             {NAV.find(n => n.end ? pathname === n.to : pathname.startsWith(n.to))?.label || 'Dashboard'}
           </div>
           <div className="admin-topbar__right">
-            <Link to="/" className="admin-topbar__view-site">
-              View Site
+            {pendingPayCount > 0 && (
+              <Link to="/admin/orders" className="admin-topbar__alert" onClick={() => setSidebar(false)}>
+                <span className="admin-topbar__alert-dot" />
+                {pendingPayCount} payment{pendingPayCount > 1 ? 's' : ''} pending
+              </Link>
+            )}
+            <Link to="/admin/settings" className="admin-topbar__settings-btn" title="Settings">
+              <Settings size={16}/>
             </Link>
+            <button className="theme-toggle" onClick={toggleTheme}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+              <span className="theme-toggle__icon theme-toggle__icon--sun"><Sun size={16}/></span>
+              <span className="theme-toggle__icon theme-toggle__icon--moon"><Moon size={16}/></span>
+            </button>
+            <Link to="/" className="admin-topbar__view-site">View Site</Link>
           </div>
         </header>
 
@@ -116,11 +151,12 @@ export default function Admin() {
         <div className="admin-content">
           <Routes>
             <Route index                    element={<AdminOverview />} />
+            <Route path="orders"            element={<AdminOrders />} />
             <Route path="menu"              element={<AdminMenu />} />
             <Route path="reservations"      element={<AdminReservations />} />
-            <Route path="orders"            element={<AdminOrders />} />
             <Route path="reviews"           element={<AdminReviews />} />
             <Route path="gallery"           element={<AdminGallery />} />
+            <Route path="settings"          element={<AdminSettings />} />
           </Routes>
         </div>
       </div>

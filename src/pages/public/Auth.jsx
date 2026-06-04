@@ -1,19 +1,50 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, UserPlus, ChevronRight } from 'lucide-react';
+import {
+  Eye, EyeOff, LogIn, UserPlus, Phone, MapPin,
+  CheckCircle, Gift, CalendarDays, UtensilsCrossed, Star
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { signIn, signUp } from '../../lib/supabase';
 import './Auth.css';
 
-export default function Auth() {
-  const [mode, setMode]         = useState('login'); // 'login' | 'signup'
-  const [loading, setLoading]   = useState(false);
-  const [showPwd, setShowPwd]   = useState(false);
-  const [form, setForm]         = useState({ fullName:'', email:'', password:'', confirm:'' });
-  const navigate                = useNavigate();
+const BENEFITS = [
+  { icon: <CalendarDays size={16} />, text: 'Easy table reservations' },
+  { icon: <UtensilsCrossed size={16} />, text: 'Track your order history' },
+  { icon: <Star size={16} />, text: 'Leave reviews & earn rewards' },
+  { icon: <Gift size={16} />, text: 'Exclusive member offers & discounts' },
+];
 
+export default function Auth() {
+  const [mode, setMode]       = useState('login');
+  const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+  const [showCfm, setShowCfm] = useState(false);
+  const [form, setForm]       = useState({
+    fullName: '', email: '', phone: '', password: '', confirm: '', agreeTerms: false
+  });
+  const navigate = useNavigate();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  // ── Password strength ────────────────────────────────────────────────────
+  const pwdStrength = (pwd) => {
+    if (!pwd) return { level: 0, label: '', color: '' };
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    const levels = [
+      { level: 1, label: 'Weak',   color: '#e74c3c' },
+      { level: 2, label: 'Fair',   color: '#f39c12' },
+      { level: 3, label: 'Good',   color: '#2ecc71' },
+      { level: 4, label: 'Strong', color: '#27ae60' },
+    ];
+    return levels[Math.min(score, 4) - 1] || { level: 0, label: '', color: '' };
+  };
+  const strength = pwdStrength(form.password);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -21,21 +52,18 @@ export default function Auth() {
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Welcome back!`);
-    // redirect admins to dashboard
     const adminEmails = ['admin@burmesebitesrestaurant.com', 'hlaingphonemyint@gmail.com'];
-    if (adminEmails.includes(data.user.email)) {
-      navigate('/admin');
-    } else {
-      navigate('/');
-    }
+    navigate(adminEmails.includes(data.user.email) ? '/admin' : '/');
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (!form.fullName.trim()) { toast.error('Please enter your full name.'); return; }
     if (form.password !== form.confirm) { toast.error('Passwords do not match.'); return; }
     if (form.password.length < 6) { toast.error('Password must be at least 6 characters.'); return; }
+    if (!form.agreeTerms) { toast.error('Please agree to the Terms & Privacy Policy.'); return; }
     setLoading(true);
-    const { error } = await signUp(form.email, form.password, form.fullName);
+    const { error } = await signUp(form.email, form.password, form.fullName, { phone: form.phone });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     toast.success('Account created! Please check your email to confirm.');
@@ -50,11 +78,7 @@ export default function Auth() {
       <div className="auth-container">
         {/* Logo */}
         <Link to="/" className="auth-logo">
-          <span>🍜</span>
-          <div>
-            <div className="auth-logo__main">BurmeseBites</div>
-            <div className="auth-logo__sub">Authentic Myanmar Cuisine</div>
-          </div>
+          <img src="/logo.png" alt="BurmeseBites" className="auth-logo__img" />
         </Link>
 
         <div className="auth-card">
@@ -74,7 +98,7 @@ export default function Auth() {
             </button>
           </div>
 
-          {/* Login Form */}
+          {/* ── LOGIN FORM ── */}
           {mode === 'login' && (
             <form className="auth-form" onSubmit={handleLogin}>
               <div className="auth-form__header">
@@ -100,7 +124,7 @@ export default function Auth() {
                 </div>
               </div>
               <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
-                {loading ? 'Signing in...' : <><LogIn size={16} /> Sign In</>}
+                {loading ? 'Signing in…' : <><LogIn size={16} /> Sign In</>}
               </button>
               <p className="auth-form__switch">
                 Don't have an account?{' '}
@@ -109,25 +133,53 @@ export default function Auth() {
             </form>
           )}
 
-          {/* Signup Form */}
+          {/* ── SIGNUP FORM ── */}
           {mode === 'signup' && (
-            <form className="auth-form" onSubmit={handleSignup}>
+            <form className="auth-form auth-form--signup" onSubmit={handleSignup}>
               <div className="auth-form__header">
-                <h2>Create Account</h2>
-                <p>Join BurmeseBites and enjoy exclusive benefits</p>
+                <h2>Create Your Account</h2>
+                <p>Join BurmeseBites and enjoy exclusive member benefits</p>
               </div>
+
+              {/* Benefits strip */}
+              <div className="auth-benefits">
+                {BENEFITS.map((b, i) => (
+                  <div key={i} className="auth-benefit">
+                    <span className="auth-benefit__icon">{b.icon}</span>
+                    <span>{b.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Full Name */}
               <div className="form-group">
-                <label>Full Name</label>
-                <input required className="form-input" placeholder="Your full name"
+                <label>Full Name <span className="auth-required">*</span></label>
+                <input required className="form-input" placeholder="e.g. Hlaing Phone Myint"
                   value={form.fullName} onChange={e => set('fullName', e.target.value)} />
               </div>
+
+              {/* Email */}
               <div className="form-group">
-                <label>Email Address</label>
+                <label>Email Address <span className="auth-required">*</span></label>
                 <input required type="email" className="form-input" placeholder="your@email.com"
                   value={form.email} onChange={e => set('email', e.target.value)} />
+                <span className="auth-field-hint">We'll send your reservation confirmations here</span>
               </div>
+
+              {/* Phone */}
               <div className="form-group">
-                <label>Password</label>
+                <label>
+                  <Phone size={13} style={{ verticalAlign:'middle', marginRight:4 }} />
+                  Phone Number <span className="auth-optional">(optional)</span>
+                </label>
+                <input className="form-input" type="tel" placeholder="e.g. +66 81 234 5678"
+                  value={form.phone} onChange={e => set('phone', e.target.value)} />
+                <span className="auth-field-hint">For reservation reminders via SMS</span>
+              </div>
+
+              {/* Password */}
+              <div className="form-group">
+                <label>Password <span className="auth-required">*</span></label>
                 <div className="auth-form__pwd">
                   <input required className="form-input"
                     type={showPwd ? 'text' : 'password'}
@@ -137,17 +189,57 @@ export default function Auth() {
                     {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                {/* Strength bar */}
+                {form.password.length > 0 && (
+                  <div className="auth-pwd-strength">
+                    <div className="auth-pwd-strength__bar">
+                      {[1,2,3,4].map(n => (
+                        <div key={n} className="auth-pwd-strength__segment"
+                          style={{ background: n <= strength.level ? strength.color : 'var(--border)' }} />
+                      ))}
+                    </div>
+                    <span style={{ color: strength.color, fontSize:11, fontWeight:600 }}>{strength.label}</span>
+                  </div>
+                )}
               </div>
+
+              {/* Confirm Password */}
               <div className="form-group">
-                <label>Confirm Password</label>
-                <input required className="form-input"
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="Repeat your password"
-                  value={form.confirm} onChange={e => set('confirm', e.target.value)} />
+                <label>Confirm Password <span className="auth-required">*</span></label>
+                <div className="auth-form__pwd">
+                  <input required className="form-input"
+                    type={showCfm ? 'text' : 'password'}
+                    placeholder="Repeat your password"
+                    value={form.confirm} onChange={e => set('confirm', e.target.value)} />
+                  <button type="button" className="auth-form__pwd-toggle" onClick={() => setShowCfm(v => !v)}>
+                    {showCfm ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {form.confirm.length > 0 && (
+                  <span style={{ fontSize:11, color: form.password === form.confirm ? '#27ae60' : '#e74c3c', display:'flex', alignItems:'center', gap:4, marginTop:4 }}>
+                    {form.password === form.confirm
+                      ? <><CheckCircle size={11} /> Passwords match</>
+                      : '✗ Passwords do not match'}
+                  </span>
+                )}
               </div>
+
+              {/* Terms */}
+              <label className="auth-terms">
+                <input type="checkbox" checked={form.agreeTerms}
+                  onChange={e => set('agreeTerms', e.target.checked)} />
+                <span>
+                  I agree to the{' '}
+                  <a href="#" onClick={e => e.preventDefault()}>Terms of Service</a>
+                  {' '}and{' '}
+                  <a href="#" onClick={e => e.preventDefault()}>Privacy Policy</a>
+                </span>
+              </label>
+
               <button type="submit" className="btn btn-jade auth-submit" disabled={loading}>
-                {loading ? 'Creating...' : <><UserPlus size={16} /> Create Account</>}
+                {loading ? 'Creating account…' : <><UserPlus size={16} /> Create Account</>}
               </button>
+
               <p className="auth-form__switch">
                 Already have an account?{' '}
                 <button type="button" onClick={() => setMode('login')}>Sign in →</button>
@@ -156,9 +248,7 @@ export default function Auth() {
           )}
         </div>
 
-        <Link to="/" className="auth-back">
-          ← Back to restaurant
-        </Link>
+        <Link to="/" className="auth-back">← Back to restaurant</Link>
       </div>
     </div>
   );

@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, Menu, X, LogIn, LogOut, LayoutDashboard,
   User, Settings, ChevronDown, Home, UtensilsCrossed,
-  Images, CalendarDays, BookOpen, Star, Shield
+  Images, CalendarDays, BookOpen, Star, Shield, Sun, Moon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCart } from '../../lib/CartContext';
 import { useAuth } from '../../lib/AuthContext';
+import { useTheme } from '../../lib/ThemeContext';
 import { signOut } from '../../lib/supabase';
 import './Navbar.css';
 
@@ -20,9 +21,27 @@ const NAV_LINKS = [
   { to: '/reviews',     label: 'Reviews'   },
 ];
 
+const MOBILE_NAV = [
+  { to: '/',            icon: <Home size={18}/>,            label: 'Home'           },
+  { to: '/menu',        icon: <UtensilsCrossed size={18}/>, label: 'Menu'           },
+  { to: '/gallery',     icon: <Images size={18}/>,          label: 'Gallery'        },
+  { to: '/reservation', icon: <CalendarDays size={18}/>,    label: 'Reserve a Table'},
+  { to: '/about',       icon: <BookOpen size={18}/>,        label: 'Our Story'      },
+  { to: '/reviews',     icon: <Star size={18}/>,            label: 'Reviews'        },
+];
+
+const ADMIN_NAV = [
+  { to: '/admin',              icon: <LayoutDashboard size={18}/>, label: 'Dashboard Overview' },
+  { to: '/admin/menu',         icon: <UtensilsCrossed size={18}/>, label: 'Manage Menu'        },
+  { to: '/admin/reservations', icon: <CalendarDays size={18}/>,    label: 'Reservations'       },
+  { to: '/admin/reviews',      icon: <Star size={18}/>,            label: 'Reviews'            },
+  { to: '/admin/gallery',      icon: <Images size={18}/>,          label: 'Gallery'            },
+];
+
 export default function Navbar({ onCartOpen }) {
   const { totalItems }            = useCart();
   const { user, isAdmin }         = useAuth();
+  const { toggle: toggleTheme, isDark } = useTheme();
   const [scrolled, setScrolled]   = useState(false);
   const [sideNav, setSideNav]     = useState(false);
   const [profileOpen, setProfile] = useState(false);
@@ -30,13 +49,29 @@ export default function Navbar({ onCartOpen }) {
   const navigate                  = useNavigate();
   const profileRef                = useRef(null);
 
+  /* Scroll listener */
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close profile dropdown when clicking outside
+  /* Lock body scroll when side nav is open */
+  useEffect(() => {
+    if (sideNav) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [sideNav]);
+
+  /* Close profile dropdown on outside click */
   useEffect(() => {
     const handler = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -47,8 +82,20 @@ export default function Navbar({ onCartOpen }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Close side nav on route change
-  useEffect(() => { setSideNav(false); setProfile(false); }, [pathname]);
+  /* Close everything on route change */
+  useEffect(() => {
+    setSideNav(false);
+    setProfile(false);
+  }, [pathname]);
+
+  /* Keyboard: close sidenav on Escape */
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') { setSideNav(false); setProfile(false); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -58,6 +105,9 @@ export default function Navbar({ onCartOpen }) {
     navigate('/');
   };
 
+  const openSideNav = () => setSideNav(true);
+  const closeSideNav = () => setSideNav(false);
+
   const isHome = pathname === '/';
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Account';
 
@@ -66,18 +116,9 @@ export default function Navbar({ onCartOpen }) {
       <nav className={`navbar ${scrolled || !isHome ? 'navbar--solid' : ''}`}>
         <div className="navbar__inner">
 
-          {/* Hamburger — opens side nav */}
-          <button
-            className="navbar__hamburger"
-            onClick={() => setSideNav(true)}
-            aria-label="Open menu"
-          >
-            <Menu size={22} />
-          </button>
-
-          {/* Logo — always goes home */}
-          <Link to="/" className="navbar__logo">
-            <img src="/logo.png" alt="BurmeseBites" className="navbar__logo-img" />
+          {/* Logo */}
+          <Link to="/" className="navbar__logo" aria-label="Burmese Bites — Home">
+            <img src="/logo.png" alt="" className="navbar__logo-img" />
             <div className="navbar__logo-text">
               <span className="navbar__logo-main">Burmese Bites</span>
               <span className="navbar__logo-sub">Authentic Myanmar Cuisine</span>
@@ -85,7 +126,7 @@ export default function Navbar({ onCartOpen }) {
           </Link>
 
           {/* Desktop nav links */}
-          <ul className="navbar__links">
+          <ul className="navbar__links" role="list">
             {NAV_LINKS.map(({ to, label }) => (
               <li key={to}>
                 <Link
@@ -102,12 +143,20 @@ export default function Navbar({ onCartOpen }) {
           <div className="navbar__actions">
 
             {/* Cart */}
-            <button className="navbar__cart" onClick={onCartOpen} aria-label="Open cart">
-              <ShoppingCart size={20} />
-              {totalItems > 0 && <span className="navbar__cart-badge">{totalItems}</span>}
-            </button>
+            {user && !isAdmin && (
+              <button
+                className="navbar__cart"
+                onClick={onCartOpen}
+                aria-label={`Open cart${totalItems > 0 ? `, ${totalItems} items` : ''}`}
+              >
+                <ShoppingCart size={19} />
+                {totalItems > 0 && (
+                  <span className="navbar__cart-badge" aria-hidden="true">{totalItems}</span>
+                )}
+              </button>
+            )}
 
-            {/* Auth */}
+            {/* Auth / Profile */}
             {!user ? (
               <Link to="/auth" className="navbar__login">
                 <LogIn size={15} /> Sign In
@@ -118,18 +167,23 @@ export default function Navbar({ onCartOpen }) {
                   className="navbar__profile-btn"
                   onClick={() => setProfile(v => !v)}
                   aria-label="Profile menu"
+                  aria-expanded={profileOpen}
                 >
-                  <div className="navbar__avatar">
+                  <div className="navbar__avatar" aria-hidden="true">
                     {displayName.charAt(0).toUpperCase()}
                   </div>
                   <span className="navbar__profile-name">{displayName}</span>
-                  <ChevronDown size={14} className={`navbar__chevron ${profileOpen ? 'navbar__chevron--up' : ''}`} />
+                  <ChevronDown
+                    size={13}
+                    className={`navbar__chevron ${profileOpen ? 'navbar__chevron--up' : ''}`}
+                    aria-hidden="true"
+                  />
                 </button>
 
                 {profileOpen && (
-                  <div className="navbar__dropdown">
+                  <div className="navbar__dropdown" role="menu">
                     <div className="navbar__dropdown-header">
-                      <div className="navbar__dropdown-avatar">
+                      <div className="navbar__dropdown-avatar" aria-hidden="true">
                         {displayName.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -138,66 +192,100 @@ export default function Navbar({ onCartOpen }) {
                       </div>
                     </div>
                     <div className="navbar__dropdown-divider" />
-                    <Link to="/profile" className="navbar__dropdown-item">
+                    <Link to="/profile" className="navbar__dropdown-item" role="menuitem">
                       <User size={15} /> My Profile
                     </Link>
-                    <Link to="/profile/orders" className="navbar__dropdown-item">
-                      <ShoppingCart size={15} /> My Orders
-                    </Link>
-                    <Link to="/profile/reservations" className="navbar__dropdown-item">
+                    <Link to="/profile/reservations" className="navbar__dropdown-item" role="menuitem">
                       <CalendarDays size={15} /> My Reservations
                     </Link>
-                    <Link to="/profile/settings" className="navbar__dropdown-item">
+                    <Link to="/profile/settings" className="navbar__dropdown-item" role="menuitem">
                       <Settings size={15} /> Account Settings
                     </Link>
                     {isAdmin && (
                       <>
                         <div className="navbar__dropdown-divider" />
-                        <Link to="/admin" className="navbar__dropdown-item navbar__dropdown-item--admin">
+                        <Link to="/admin" className="navbar__dropdown-item navbar__dropdown-item--admin" role="menuitem">
                           <Shield size={15} /> Admin Dashboard
                         </Link>
                       </>
                     )}
                     <div className="navbar__dropdown-divider" />
-                    <button className="navbar__dropdown-item navbar__dropdown-item--logout" onClick={handleLogout}>
+                    <button
+                      className="navbar__dropdown-item navbar__dropdown-item--logout"
+                      onClick={handleLogout}
+                      role="menuitem"
+                    >
                       <LogOut size={15} /> Sign Out
                     </button>
                   </div>
                 )}
               </div>
             )}
+
+            {/* Theme toggle */}
+            <button
+              className="theme-toggle"
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              <span className="theme-toggle__icon theme-toggle__icon--sun"><Sun size={17}/></span>
+              <span className="theme-toggle__icon theme-toggle__icon--moon"><Moon size={17}/></span>
+            </button>
+
+            {/* Hamburger — mobile/tablet only (CSS: display:none on desktop) */}
+            <button
+              className="navbar__hamburger"
+              onClick={openSideNav}
+              aria-label="Open navigation menu"
+              aria-expanded={sideNav}
+            >
+              <Menu size={20} />
+            </button>
+
           </div>
         </div>
       </nav>
 
-      {/* ── Side Navigation Drawer ── */}
-      {sideNav && <div className="sidenav-overlay" onClick={() => setSideNav(false)} />}
-      <aside className={`sidenav ${sideNav ? 'sidenav--open' : ''}`}>
+      {/* ── Overlay ── */}
+      {sideNav && (
+        <div
+          className="sidenav-overlay"
+          onClick={closeSideNav}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ── Side Navigation (right drawer) ── */}
+      <aside
+        className={`sidenav ${sideNav ? 'sidenav--open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+      >
+        {/* Header */}
         <div className="sidenav__header">
-          <Link to="/" className="sidenav__logo" onClick={() => setSideNav(false)}>
-            <img src="/logo.png" alt="BurmeseBites" className="sidenav__logo-img" />
+          <Link to="/" className="sidenav__logo" onClick={closeSideNav}>
+            <img src="/logo.png" alt="" className="sidenav__logo-img" />
+            <div>
+              <p className="sidenav__logo-main">Burmese Bites</p>
+              <p className="sidenav__logo-sub">Authentic Myanmar Cuisine</p>
+            </div>
           </Link>
-          <button className="sidenav__close" onClick={() => setSideNav(false)}>
-            <X size={20} />
+          <button className="sidenav__close" onClick={closeSideNav} aria-label="Close menu">
+            <X size={18} />
           </button>
         </div>
 
+        {/* Nav links */}
         <div className="sidenav__body">
           <p className="sidenav__section-label">Navigation</p>
           <nav className="sidenav__nav">
-            {[
-              { to:'/',            icon:<Home size={17}/>,           label:'Home'      },
-              { to:'/menu',        icon:<UtensilsCrossed size={17}/>, label:'Menu'      },
-              { to:'/gallery',     icon:<Images size={17}/>,          label:'Gallery'   },
-              { to:'/reservation', icon:<CalendarDays size={17}/>,    label:'Reserve a Table' },
-              { to:'/about',       icon:<BookOpen size={17}/>,        label:'Our Story' },
-              { to:'/reviews',     icon:<Star size={17}/>,            label:'Reviews'   },
-            ].map(({ to, icon, label }) => (
+            {MOBILE_NAV.map(({ to, icon, label }) => (
               <Link
                 key={to}
                 to={to}
                 className={`sidenav__link ${pathname === to ? 'sidenav__link--active' : ''}`}
-                onClick={() => setSideNav(false)}
+                onClick={closeSideNav}
               >
                 {icon} <span>{label}</span>
               </Link>
@@ -208,19 +296,14 @@ export default function Navbar({ onCartOpen }) {
             <>
               <p className="sidenav__section-label" style={{ marginTop: 24 }}>Admin</p>
               <nav className="sidenav__nav">
-                {[
-                  { to:'/admin',              icon:<LayoutDashboard size={17}/>, label:'Dashboard Overview' },
-                  { to:'/admin/menu',         icon:<UtensilsCrossed size={17}/>, label:'Manage Menu'        },
-                  { to:'/admin/reservations', icon:<CalendarDays size={17}/>,    label:'Reservations'       },
-                  { to:'/admin/orders',       icon:<ShoppingCart size={17}/>,    label:'Orders'             },
-                  { to:'/admin/reviews',      icon:<Star size={17}/>,            label:'Reviews'            },
-                  { to:'/admin/gallery',      icon:<Images size={17}/>,          label:'Gallery'            },
-                ].map(({ to, icon, label }) => (
+                {ADMIN_NAV.map(({ to, icon, label }) => (
                   <Link
                     key={to}
                     to={to}
-                    className={`sidenav__link sidenav__link--admin ${pathname === to || pathname.startsWith(to+'/') ? 'sidenav__link--active' : ''}`}
-                    onClick={() => setSideNav(false)}
+                    className={`sidenav__link sidenav__link--admin ${
+                      pathname === to || pathname.startsWith(to + '/') ? 'sidenav__link--active' : ''
+                    }`}
+                    onClick={closeSideNav}
                   >
                     {icon} <span>{label}</span>
                   </Link>
@@ -230,22 +313,27 @@ export default function Navbar({ onCartOpen }) {
           )}
         </div>
 
+        {/* Footer */}
         <div className="sidenav__footer">
           {user ? (
             <div className="sidenav__user">
-              <div className="sidenav__user-avatar">
+              <div className="sidenav__user-avatar" aria-hidden="true">
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="sidenav__user-info">
                 <p>{displayName}</p>
                 <span>{user.email}</span>
               </div>
-              <button className="sidenav__logout" onClick={handleLogout} title="Sign out">
+              <button className="sidenav__logout" onClick={handleLogout} aria-label="Sign out">
                 <LogOut size={16} />
               </button>
             </div>
           ) : (
-            <Link to="/auth" className="btn btn-primary sidenav__signin" onClick={() => setSideNav(false)}>
+            <Link
+              to="/auth"
+              className="btn btn-primary sidenav__signin"
+              onClick={closeSideNav}
+            >
               <LogIn size={15} /> Sign In / Register
             </Link>
           )}

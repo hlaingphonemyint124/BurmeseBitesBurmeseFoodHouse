@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 
 import { CartProvider }  from './lib/CartContext';
 import { AuthProvider }  from './lib/AuthContext';
+import { ThemeProvider, useTheme } from './lib/ThemeContext';
 import Navbar            from './components/layout/Navbar';
 import Footer            from './components/layout/Footer';
 import CartSidebar       from './components/shared/CartSidebar';
@@ -18,6 +19,24 @@ import Auth        from './pages/public/Auth';
 import Profile     from './pages/public/Profile';
 import Admin       from './pages/admin/Admin';
 
+function ThemedToaster() {
+  const { isDark } = useTheme();
+  return (
+    <Toaster
+      position="bottom-right"
+      toastOptions={{
+        style: {
+          background: isDark ? '#1E1A14' : '#FAF6EE',
+          color:      isDark ? '#F5F0E8' : '#1E1A14',
+          border:     isDark ? '1px solid rgba(232,168,74,0.3)' : '1px solid #E8A84A',
+          fontFamily: 'var(--font-body)',
+          boxShadow:  isDark ? '0 8px 24px rgba(0,0,0,0.5)' : '0 4px 16px rgba(0,0,0,0.12)',
+        },
+        iconTheme: { primary: '#C27A2A', secondary: isDark ? '#1E1A14' : '#fff' },
+      }}
+    />
+  );
+}
 
 function PublicLayout() {
   const [cartOpen, setCartOpen] = useState(false);
@@ -51,26 +70,19 @@ function PublicLayout() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <Router>
-          <Routes>
-            {/* Auth — no navbar/footer */}
-            <Route path="/auth" element={<Auth />} />
-            {/* Admin — its own full-screen layout */}
-            <Route path="/admin/*" element={<Admin />} />
-            {/* Public site */}
-            <Route path="/*" element={<PublicLayout />} />
-          </Routes>
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              style: { background:'#FAF6EE', color:'#1E1A14', border:'1px solid #E8A84A', fontFamily:'var(--font-body)' },
-              iconTheme: { primary:'#C27A2A', secondary:'#fff' },
-            }}
-          />
-        </Router>
-      </CartProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <CartProvider>
+          <Router>
+            <Routes>
+              <Route path="/auth"    element={<Auth />}  />
+              <Route path="/admin/*" element={<Admin />} />
+              <Route path="/*"       element={<PublicLayout />} />
+            </Routes>
+            <ThemedToaster />
+          </Router>
+        </CartProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
