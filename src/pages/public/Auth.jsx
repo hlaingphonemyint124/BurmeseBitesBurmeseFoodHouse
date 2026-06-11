@@ -51,9 +51,24 @@ export default function Auth() {
     const { data, error } = await signIn(form.email, form.password);
     setLoading(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Welcome back!`);
-    const adminEmails = ['admin@burmesebitesrestaurant.com', 'hlaingphonemyint@gmail.com'];
-    navigate(adminEmails.includes(data.user.email) ? '/admin' : '/');
+
+    const u = data.user;
+    const role = u?.user_metadata?.role;
+    const adminEmails = [
+      'hlaingphonemyint20@gmail.com',
+      ...(import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean),
+    ];
+
+    if (adminEmails.includes(u.email)) {
+      toast.success('Welcome, Admin!');
+      navigate('/admin');
+    } else if (role === 'driver') {
+      toast.success(`Welcome, ${u.user_metadata?.full_name || 'Driver'}!`);
+      navigate('/driver');
+    } else {
+      toast.success('Welcome back!');
+      navigate('/');
+    }
   };
 
   const handleSignup = async (e) => {

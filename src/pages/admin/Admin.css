@@ -490,3 +490,78 @@
   0%, 100% { box-shadow: 0 0 0 0 rgba(252,211,77,0.5); }
   50%       { box-shadow: 0 0 0 4px rgba(252,211,77,0); }
 }
+
+/* ── Light mode explicit restore (overrides any global dark CSS) ── */
+.admin-shell {
+  background: #f4f1eb !important;
+}
+.admin-main {
+  background: #f4f1eb !important;
+}
+.admin-content {
+  background: transparent !important;
+}
+.admin-sidebar {
+  background: #1E1914 !important;
+}
+.admin-topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(194,122,42,0.14) !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06) !important;
+}
+.admin-topbar__title {
+  color: var(--charcoal) !important;
+}
+.admin-stat-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(194,122,42,0.12) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+}
+.admin-stat-card__value { color: var(--charcoal) !important; }
+.admin-stat-card__label { color: var(--text-muted) !important; }
+.admin-table-wrap {
+  background: #ffffff !important;
+  border: 1px solid rgba(194,122,42,0.12) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+}
+.admin-table th { background: var(--ivory) !important; color: var(--text-muted) !important; }
+.admin-table td { color: var(--charcoal) !important; }
+.admin-table tr:hover td { background: var(--ivory) !important; }
+.admin-modal { background: #ffffff !important; }
+.admin-modal__header h3 { color: var(--charcoal) !important; }
+.admin-search input { background: var(--ivory) !important; color: var(--charcoal) !important; }
+.admin-section-head h2 { color: var(--charcoal) !important; }
+.orders-pipeline__step { background: #ffffff !important; border: 1px solid rgba(194,122,42,0.12) !important; }
+.review-admin-card { background: #ffffff !important; border: 1px solid rgba(194,122,42,0.1) !important; }
+.admin-panel, .overview-info-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(194,122,42,0.12) !important;
+}
+
+/* ── Dark mode overrides ── */
+[data-theme="dark"] .admin-shell  { background: #0a0806 !important; }
+[data-theme="dark"] .admin-main   { background: #0a0806 !important; }
+[data-theme="dark"] .admin-topbar { background: rgba(12,10,6,0.96) !important; border-color: rgba(232,168,74,0.1) !important; box-shadow: 0 2px 16px rgba(0,0,0,0.4) !important; }
+[data-theme="dark"] .admin-topbar__title { color: #F5F0E8 !important; }
+[data-theme="dark"] .admin-stat-card { background: #1c1812 !important; border-color: rgba(232,168,74,0.12) !important; box-shadow: 0 2px 12px rgba(0,0,0,0.3) !important; }
+[data-theme="dark"] .admin-stat-card__value { color: #F5F0E8 !important; }
+[data-theme="dark"] .admin-stat-card__label { color: rgba(255,255,255,0.38) !important; }
+[data-theme="dark"] .admin-table-wrap { background: #1c1812 !important; border-color: rgba(232,168,74,0.1) !important; }
+[data-theme="dark"] .admin-table th { background: #131008 !important; color: rgba(255,255,255,0.38) !important; border-color: rgba(232,168,74,0.08) !important; }
+[data-theme="dark"] .admin-table td { color: #C8BEA8 !important; border-color: rgba(232,168,74,0.06) !important; }
+[data-theme="dark"] .admin-table tr:hover td { background: #252018 !important; }
+[data-theme="dark"] .admin-modal { background: #1c1812 !important; border: 1px solid rgba(232,168,74,0.12) !important; }
+[data-theme="dark"] .admin-modal__header h3 { color: #F5F0E8 !important; }
+[data-theme="dark"] .admin-search input { background: #1c1812 !important; color: #F5F0E8 !important; border-color: rgba(232,168,74,0.18) !important; }
+[data-theme="dark"] .admin-section-head h2 { color: #F5F0E8 !important; }
+[data-theme="dark"] .orders-pipeline__step { background: #1c1812 !important; border-color: rgba(232,168,74,0.12) !important; }
+[data-theme="dark"] .review-admin-card { background: #1c1812 !important; }
+[data-theme="dark"] .admin-panel, [data-theme="dark"] .overview-info-card { background: #1c1812 !important; border-color: rgba(232,168,74,0.12) !important; }
+
+/* ── 5-col stats for drivers page ── */
+.admin-drivers .admin-stats {
+  grid-template-columns: repeat(5, 1fr);
+}
+@media (max-width: 1100px) { .admin-drivers .admin-stats { grid-template-columns: repeat(3,1fr); } }
+@media (max-width: 768px)  { .admin-drivers .admin-stats { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 480px)  { .admin-drivers .admin-stats { grid-template-columns: 1fr; } }

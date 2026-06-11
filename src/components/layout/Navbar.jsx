@@ -40,7 +40,7 @@ const ADMIN_NAV = [
 
 export default function Navbar({ onCartOpen }) {
   const { totalItems }            = useCart();
-  const { user, isAdmin }         = useAuth();
+  const { user, isAdmin, isDriver } = useAuth();
   const { toggle: toggleTheme, isDark } = useTheme();
   const [scrolled, setScrolled]   = useState(false);
   const [sideNav, setSideNav]     = useState(false);
@@ -206,6 +206,14 @@ export default function Navbar({ onCartOpen }) {
                         <div className="navbar__dropdown-divider" />
                         <Link to="/admin" className="navbar__dropdown-item navbar__dropdown-item--admin" role="menuitem">
                           <Shield size={15} /> Admin Dashboard
+                        </Link>
+                      </>
+                    )}
+                    {isDriver && !isAdmin && (
+                      <>
+                        <div className="navbar__dropdown-divider" />
+                        <Link to="/driver" className="navbar__dropdown-item navbar__dropdown-item--admin" role="menuitem">
+                          <Shield size={15} /> Driver Dashboard
                         </Link>
                       </>
                     )}
