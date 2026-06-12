@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useReveal } from '../../../lib/useReveal';
 
 export default function StorySection() {
+  const { ref, revealed } = useReveal();
   return (
-    <section id="story" className="page-section">
+    <section id="story" className={`page-section reveal-section ${revealed ? 'is-revealed' : ''}`} ref={ref}>
       <div className="container home__story">
-        <div className="home__story-img">
+        <div className="home__story-img reveal-left">
           <img
             src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=700&q=80"
             alt="Our restaurant interior"
@@ -15,7 +17,7 @@ export default function StorySection() {
             <span className="home__story-badge-num">2009</span>
           </div>
         </div>
-        <div className="home__story-text">
+        <div className="home__story-text reveal-right">
           <span className="section-label">Our Heritage</span>
           <h2 className="section-title">A Taste of Yangon<br /><em>in the Heart of Bangkok</em></h2>
           <p className="section-subtitle">

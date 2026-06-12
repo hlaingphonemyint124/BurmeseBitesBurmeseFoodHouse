@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getMenuItems } from '../../../lib/supabase';
 import { useCart } from '../../../lib/CartContext';
+import { useReveal } from '../../../lib/useReveal';
 import toast from 'react-hot-toast';
 
 const DISH_IMAGES = [
@@ -12,6 +13,7 @@ const DISH_IMAGES = [
 export default function FeaturedDishesSection() {
   const [featured, setFeatured] = useState([]);
   const { dispatch } = useCart();
+  const { ref, revealed } = useReveal();
 
   useEffect(() => {
     getMenuItems().then(({ data }) => {
@@ -22,15 +24,15 @@ export default function FeaturedDishesSection() {
   const addToCart = (item) => {
     dispatch({ type: 'ADD_ITEM', item });
     toast.success(`${item.name} added to cart!`, {
-      style: { background: '#FAF6EE', color: '#1E1A14', border: '1px solid #E8A84A' },
+      style: { background: '#FFFFFF', color: '#252220', border: '1px solid #E8A84A' },
       iconTheme: { primary: '#C27A2A', secondary: '#fff' },
     });
   };
 
   return (
-    <section className="page-section-alt">
+    <section className={`page-section-alt reveal-section ${revealed ? 'is-revealed' : ''}`} ref={ref}>
       <div className="container">
-        <div className="home__section-head">
+        <div className="home__section-head reveal-up">
           <div>
             <span className="section-label">Taste the Tradition</span>
             <h2 className="section-title">Chef's Selections</h2>
@@ -39,7 +41,7 @@ export default function FeaturedDishesSection() {
         </div>
         <div className="home__dishes">
           {featured.map((item, idx) => (
-            <div key={item.id} className="dish-card">
+            <div key={item.id} className="dish-card reveal-item" style={{ animationDelay: `${idx * 80}ms` }}>
               <div className="dish-card__img-wrap">
                 <img
                   src={`https://images.unsplash.com/photo-${DISH_IMAGES[idx % DISH_IMAGES.length]}?w=500&q=75`}

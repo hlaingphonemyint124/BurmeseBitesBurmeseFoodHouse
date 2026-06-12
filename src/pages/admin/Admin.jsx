@@ -3,7 +3,7 @@ import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UtensilsCrossed, CalendarDays,
   Star, Images, LogOut, Menu, X, ChevronRight, ShoppingCart,
-  Settings, Sun, Moon, Bike
+  Settings, Sun, Moon, Bike, Users
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../lib/AuthContext';
@@ -17,6 +17,7 @@ import AdminReviews     from '../../components/admin/AdminReviews';
 import AdminGallery     from '../../components/admin/AdminGallery';
 import AdminSettings    from '../../components/admin/AdminSettings';
 import AdminDrivers     from '../../components/admin/AdminDrivers';
+import AdminUsers       from '../../components/admin/AdminUsers';
 import '../../components/admin/AdminSettings.css';
 import '../../components/admin/AdminDrivers.css';
 import './Admin.css';
@@ -67,6 +68,8 @@ export default function Admin() {
     { to: '/admin/reviews',      label: 'Reviews',        icon: <Star size={18} /> },
     { to: '/admin/gallery',      label: 'Gallery',        icon: <Images size={18} /> },
     { to: '/admin/drivers',      label: 'Drivers',        icon: <Bike size={18}/> },
+    { to: '/admin/users',        label: 'User Management', icon: <Users size={18}/> },
+    { to: '/admin/settings',     label: 'Settings',       icon: <Settings size={18}/> },
   ];
 
   return (
@@ -83,20 +86,25 @@ export default function Admin() {
         <nav className="admin-nav">
           {NAV.map(({ to, label, icon, end, badge }) => {
             const active = end ? pathname === to : pathname.startsWith(to);
+            const isBottomGroup = to === '/admin/users' || to === '/admin/settings';
             return (
-              <Link
-                key={to}
-                to={to}
-                className={`admin-nav__item ${active ? 'admin-nav__item--active' : ''}`}
-                onClick={() => setSidebar(false)}
-              >
-                {icon}
-                <span>{label}</span>
-                {badge > 0 && (
-                  <span className="admin-nav__badge">{badge}</span>
+              <React.Fragment key={to}>
+                {to === '/admin/users' && (
+                  <div className="admin-nav__divider" />
                 )}
-                {active && !badge && <ChevronRight size={14} className="admin-nav__arrow" />}
-              </Link>
+                <Link
+                  to={to}
+                  className={`admin-nav__item ${active ? 'admin-nav__item--active' : ''}`}
+                  onClick={() => setSidebar(false)}
+                >
+                  {icon}
+                  <span>{label}</span>
+                  {badge > 0 && (
+                    <span className="admin-nav__badge">{badge}</span>
+                  )}
+                  {active && !badge && <ChevronRight size={14} className="admin-nav__arrow" />}
+                </Link>
+              </React.Fragment>
             );
           })}
         </nav>
@@ -138,9 +146,6 @@ export default function Admin() {
                 {pendingPayCount} payment{pendingPayCount > 1 ? 's' : ''} pending
               </Link>
             )}
-            <Link to="/admin/settings" className="admin-topbar__settings-btn" title="Settings">
-              <Settings size={16}/>
-            </Link>
             <button className="theme-toggle" onClick={toggleTheme}
               aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
               <span className="theme-toggle__icon theme-toggle__icon--sun"><Sun size={16}/></span>
@@ -160,7 +165,8 @@ export default function Admin() {
             <Route path="reviews"           element={<AdminReviews />} />
             <Route path="gallery"           element={<AdminGallery />} />
             <Route path="settings"          element={<AdminSettings />} />
-            <Route path="drivers"          element={<AdminDrivers />} />
+            <Route path="drivers"           element={<AdminDrivers />} />
+            <Route path="users"             element={<AdminUsers />} />
           </Routes>
         </div>
       </div>

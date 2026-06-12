@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const HERO_SLIDES = [
   {
@@ -23,16 +23,41 @@ const HERO_SLIDES = [
   },
 ];
 
-export default function HeroSection() {
-  const [slide, setSlide] = useState(0);
+const SLIDE_DURATION = 6000;
 
+export default function HeroSection() {
+  const [slide, setSlide]     = useState(0);
+  const [animKey, setAnimKey] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const startRef = useRef(performance.now());
+  const rafRef   = useRef(null);
+
+  const goTo = (idx) => {
+    setSlide(idx);
+    setAnimKey(k => k + 1);
+    setProgress(0);
+    startRef.current = performance.now();
+  };
+
+  const next = () => goTo((slide + 1) % HERO_SLIDES.length);
+  const prev = () => goTo((slide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+
+  // Auto-advance + progress bar
   useEffect(() => {
-    const t = setInterval(() => setSlide(s => (s + 1) % HERO_SLIDES.length), 5000);
-    return () => clearInterval(t);
-  }, []);
+    startRef.current = performance.now();
+    const tick = (now) => {
+      const p = Math.min(((now - startRef.current) / SLIDE_DURATION) * 100, 100);
+      setProgress(p);
+      if (p < 100) { rafRef.current = requestAnimationFrame(tick); }
+      else { goTo((slide + 1) % HERO_SLIDES.length); }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [slide]);
 
   return (
     <section className="hero">
+      {/* slides */}
       {HERO_SLIDES.map((s, i) => (
         <div
           key={i}
@@ -40,26 +65,45 @@ export default function HeroSection() {
           style={{ backgroundImage: `url(${s.bg})` }}
         />
       ))}
+
       <div className="hero__overlay" />
-      <div className="hero__content container">
-        <span className="hero__tag">{HERO_SLIDES[slide].tag}</span>
-        <h1 className="hero__title">{HERO_SLIDES[slide].title}</h1>
-        <p className="hero__sub">{HERO_SLIDES[slide].sub}</p>
-        <div className="hero__actions">
+
+      {/* progress bar */}
+      <div className="hero__progress-bar">
+        <div className="hero__progress-fill" style={{ width: `${progress}%` }} />
+      </div>
+
+      {/* staggered content */}
+      <div className="hero__content container" key={animKey}>
+        <span className="hero__tag hero__anim-1">{HERO_SLIDES[slide].tag}</span>
+        <h1 className="hero__title hero__anim-2">{HERO_SLIDES[slide].title}</h1>
+        <p className="hero__sub hero__anim-3">{HERO_SLIDES[slide].sub}</p>
+        <div className="hero__actions hero__anim-4">
           <Link to="/menu" className="btn btn-primary">Explore Menu</Link>
           <Link to="/reservation" className="btn hero__btn-ghost">Book a Table</Link>
         </div>
       </div>
+
+      {/* arrow nav */}
+      <button className="hero__arrow hero__arrow--prev" onClick={prev} aria-label="Previous slide">
+        <ChevronLeft size={22} />
+      </button>
+      <button className="hero__arrow hero__arrow--next" onClick={next} aria-label="Next slide">
+        <ChevronRight size={22} />
+      </button>
+
+      {/* dots */}
       <div className="hero__dots">
         {HERO_SLIDES.map((_, i) => (
           <button
             key={i}
             className={`hero__dot ${i === slide ? 'hero__dot--active' : ''}`}
-            onClick={() => setSlide(i)}
+            onClick={() => goTo(i)}
             aria-label={`Slide ${i + 1}`}
           />
         ))}
       </div>
+
       <a href="#story" className="hero__scroll-hint">
         <ChevronDown size={20} />
       </a>

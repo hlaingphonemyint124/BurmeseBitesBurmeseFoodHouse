@@ -4,3 +4,6 @@ export { default as AdminReservations } from './AdminReservations';
 export { default as AdminOrders }       from './AdminOrders';
 export { default as AdminReviews }      from './AdminReviews';
 export { default as AdminGallery }      from './AdminGallery';
+export { default as AdminSettings }     from './AdminSettings';
+export { default as AdminDrivers }      from './AdminDrivers';
+export { default as AdminUsers }        from './AdminUsers';

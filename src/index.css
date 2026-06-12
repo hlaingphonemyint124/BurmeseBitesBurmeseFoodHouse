@@ -2377,3 +2377,177 @@ html { scroll-behavior: smooth; }
   .admin-filter-bar { gap: 8px; }
   .gallery-masonry { columns: 1; }
 }
+
+/* ════════════════════════════════════════════════════════
+   PROFESSIONAL ANIMATIONS — no color changes, pure motion
+════════════════════════════════════════════════════════ */
+
+/* ── Ken Burns (hero slides) ── */
+@keyframes kenBurns {
+  0%   { transform: scale(1) translateX(0) translateY(0); }
+  50%  { transform: scale(1.06) translateX(-1%) translateY(-0.5%); }
+  100% { transform: scale(1.08) translateX(1%) translateY(0.5%); }
+}
+.hero__slide--active { animation: kenBurns 8s ease-in-out forwards; }
+.hero__slide { will-change: transform, opacity; }
+
+/* ── Hero progress bar ── */
+.hero__progress-bar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 3px; background: rgba(255,255,255,0.1); z-index: 4;
+}
+.hero__progress-fill {
+  height: 100%; background: var(--amber-light);
+  transition: width 0.1s linear; border-radius: 0 2px 2px 0;
+}
+
+/* ── Hero arrow buttons ── */
+.hero__arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  z-index: 4; width: 46px; height: 46px; border-radius: 50%;
+  background: rgba(255,255,255,0.12); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.22s, transform 0.22s;
+  opacity: 0;
+}
+.hero:hover .hero__arrow { opacity: 1; }
+.hero__arrow:hover { background: rgba(232,168,74,0.35); transform: translateY(-50%) scale(1.08); }
+.hero__arrow--prev { left: 28px; }
+.hero__arrow--next { right: 28px; }
+@media (max-width: 768px) { .hero__arrow { display: none; } }
+
+/* ── Hero content stagger ── */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero__anim-1 { animation: heroFadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.10s both; }
+.hero__anim-2 { animation: heroFadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.22s both; }
+.hero__anim-3 { animation: heroFadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.38s both; }
+.hero__anim-4 { animation: heroFadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.52s both; }
+
+/* ── Scroll reveal ── */
+@keyframes revealFadeUp   { from { opacity:0; transform:translateY(32px); } to { opacity:1; transform:translateY(0); } }
+@keyframes revealFadeLeft { from { opacity:0; transform:translateX(-36px); } to { opacity:1; transform:translateX(0); } }
+@keyframes revealFadeRight{ from { opacity:0; transform:translateX(36px);  } to { opacity:1; transform:translateX(0); } }
+
+.reveal-section .reveal-up,
+.reveal-section .reveal-left,
+.reveal-section .reveal-right,
+.reveal-section .reveal-item { opacity: 0; }
+.reveal-section.is-revealed .reveal-up    { animation: revealFadeUp    0.65s cubic-bezier(0.22,1,0.36,1) both; }
+.reveal-section.is-revealed .reveal-left  { animation: revealFadeLeft  0.70s cubic-bezier(0.22,1,0.36,1) 0.10s both; }
+.reveal-section.is-revealed .reveal-right { animation: revealFadeRight 0.70s cubic-bezier(0.22,1,0.36,1) 0.18s both; }
+.reveal-section.is-revealed .reveal-item  { animation: revealFadeUp    0.60s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── Ripple ── */
+.btn { position: relative; overflow: hidden; }
+.ripple {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,0.35); pointer-events: none;
+  transform: scale(0); animation: rippleAnim 0.55s ease-out forwards;
+}
+@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+/* ── Button shimmer ── */
+@keyframes shimmerSweep {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+.btn-primary { position: relative; overflow: hidden; }
+.btn-primary::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
+  background-size: 200% 100%; background-position: -200% center;
+}
+.btn-primary:hover::after { animation: shimmerSweep 0.6s ease forwards; }
+
+/* ── Dish card hover overlay (slide up) ── */
+.dish-card__overlay {
+  opacity: 0; transform: translateY(100%);
+  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.22,1,0.36,1);
+}
+.dish-card:hover .dish-card__overlay { opacity: 1; transform: translateY(0); }
+.dish-card__img-wrap img { transition: transform 0.55s ease; }
+.dish-card:hover .dish-card__img-wrap img { transform: scale(1.06); }
+
+/* ── Admin nav slide ── */
+.admin-nav__item { transition: background 0.18s, color 0.18s, transform 0.18s; }
+.admin-nav__item:hover { transform: translateX(3px); }
+.admin-nav__item--active { transform: translateX(3px); }
+
+/* ── Card hover lift ── */
+.menu-item-card, .review-card, .dish-card {
+  transition: transform 0.28s cubic-bezier(0.22,1,0.36,1), box-shadow 0.28s ease;
+}
+.menu-item-card:hover, .review-card:hover { transform: translateY(-4px); }
+
+/* ── Gallery hover ── */
+.gallery-item { transition: transform 0.32s cubic-bezier(0.22,1,0.36,1), box-shadow 0.32s ease; }
+.gallery-item:hover { transform: scale(1.025); z-index: 2; }
+
+/* ── Modal entrance ── */
+@keyframes modalIn { from { opacity:0; transform:scale(0.94) translateY(16px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.admin-modal, .au-modal { animation: modalIn 0.32s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── Admin stat cards ── */
+@keyframes statCardIn { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+.admin-stat-card { animation: statCardIn 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+.admin-stat-card:nth-child(1) { animation-delay: 0ms; }
+.admin-stat-card:nth-child(2) { animation-delay: 70ms; }
+.admin-stat-card:nth-child(3) { animation-delay: 140ms; }
+.admin-stat-card:nth-child(4) { animation-delay: 210ms; }
+
+/* ── Scroll bounce ── */
+@keyframes bounce { 0%,100% { transform:translateY(0); opacity:0.6; } 50% { transform:translateY(8px); opacity:1; } }
+.hero__scroll-hint { animation: bounce 2.2s ease-in-out infinite; }
+
+/* ── Skeleton loader ── */
+@keyframes skeletonShimmer { 0% { background-position:-400px 0; } 100% { background-position:400px 0; } }
+.skeleton {
+  background: linear-gradient(90deg, var(--ivory) 25%, var(--ivory-dark) 50%, var(--ivory) 75%);
+  background-size: 800px 100%; animation: skeletonShimmer 1.5s ease-in-out infinite; border-radius: 6px;
+}
+
+/* ── Footer social ── */
+.footer__social { transition: transform 0.28s cubic-bezier(0.34,1.4,0.64,1), background 0.22s, color 0.22s; }
+.footer__social:hover { transform: translateY(-4px) scale(1.12); }
+
+/* ── Form input lift on focus ── */
+.form-input { transition: border-color 0.22s, box-shadow 0.22s, transform 0.18s; }
+.form-input:focus { transform: translateY(-1px); }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-section .reveal-up, .reveal-section .reveal-left,
+  .reveal-section .reveal-right, .reveal-section .reveal-item,
+  .hero__anim-1,.hero__anim-2,.hero__anim-3,.hero__anim-4 { animation:none !important; opacity:1 !important; transform:none !important; }
+  .hero__slide--active { animation: none !important; }
+}
+
+
+/* ── Reveal safety: never hide content if JS is slow or observer fails ── */
+.reveal-section { opacity: 1; } /* section wrapper always visible */
+.reveal-section .reveal-up,
+.reveal-section .reveal-left,
+.reveal-section .reveal-right,
+.reveal-section .reveal-item {
+  opacity: 0;
+  /* Safety timeout — show content after 1.5s regardless */
+  animation: revealFallback 0s 1.5s forwards;
+}
+@keyframes revealFallback { to { opacity: 1; transform: none; } }
+
+/* When revealed normally, override with proper animation */
+.reveal-section.is-revealed .reveal-up,
+.reveal-section.is-revealed .reveal-left,
+.reveal-section.is-revealed .reveal-right,
+.reveal-section.is-revealed .reveal-item {
+  animation: none; /* clear fallback, let individual animations run */
+}
+.reveal-section.is-revealed .reveal-up    { animation: revealFadeUp    0.65s cubic-bezier(0.22,1,0.36,1) both; }
+.reveal-section.is-revealed .reveal-left  { animation: revealFadeLeft  0.70s cubic-bezier(0.22,1,0.36,1) 0.10s both; }
+.reveal-section.is-revealed .reveal-right { animation: revealFadeRight 0.70s cubic-bezier(0.22,1,0.36,1) 0.18s both; }
+.reveal-section.is-revealed .reveal-item  { animation: revealFadeUp    0.60s cubic-bezier(0.22,1,0.36,1) both; }
+

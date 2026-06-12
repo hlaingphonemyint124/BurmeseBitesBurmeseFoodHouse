@@ -6,6 +6,7 @@
   display: flex;
   align-items: center;
   overflow: hidden;
+  background: #2C1A08; /* warm dark fallback while images load */
 }
 
 .hero__slide {
@@ -119,8 +120,10 @@
 
 /* ── Stats bar ── */
 .stats-bar {
-  background: var(--charcoal);
+  background: #FFFFFF;
   padding: 0;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 .stats-bar__inner {
   display: flex;
@@ -131,7 +134,7 @@
   align-items: center;
   gap: 14px;
   padding: 28px 20px;
-  border-right: 1px solid rgba(255,255,255,0.07);
+  border-right: 1px solid rgba(0,0,0,0.07);
   flex: 1;
   justify-content: center;
 }
@@ -141,15 +144,23 @@
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
-  color: #fff;
+  color: #3B2A1A;
   line-height: 1;
 }
 .stats-bar__label {
   font-size: 11px;
-  color: #7a6e60;
+  color: #8B7355;
   letter-spacing: 0.05em;
   margin-top: 3px;
 }
+[data-theme="dark"] .stats-bar {
+  background: #2C1F0E;
+  border-top-color: rgba(255,255,255,0.06);
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+[data-theme="dark"] .stats-bar__item { border-right-color: rgba(255,255,255,0.07); }
+[data-theme="dark"] .stats-bar__value { color: #C8956A; }
+[data-theme="dark"] .stats-bar__label { color: #8B7A66; }
 
 /* ── Story ── */
 .home__story {

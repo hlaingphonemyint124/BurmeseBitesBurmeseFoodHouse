@@ -66,6 +66,11 @@
   color: var(--amber-light);
 }
 .admin-nav__arrow { margin-left: auto; }
+.admin-nav__divider {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 10px 12px;
+}
 
 .admin-sidebar__footer {
   padding: 16px 12px;
