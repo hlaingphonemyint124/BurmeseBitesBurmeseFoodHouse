@@ -690,13 +690,10 @@ textarea.form-input { resize: vertical; min-height: 100px; }
    MENU PAGE — Liquid Glass Cards
 ════════════════════════════════════════════════════════ */
 .menu-item-card {
-  background: var(--glass-bg-strong);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-top: 1px solid rgba(255,255,255,0.75);
+  background: #FFFFFF;
+  border: 1px solid var(--border);
   border-radius: var(--glass-radius);
-  box-shadow: var(--glass-shadow);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   overflow: hidden;
   transition: transform 0.32s cubic-bezier(0.4,0,0.2,1), box-shadow 0.32s ease;
   will-change: transform;
@@ -713,23 +710,28 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 }
 .menu-item-card:hover {
   transform: translateY(-6px) scale(1.012);
-  box-shadow: var(--glass-shadow-lg), 0 0 0 1.5px rgba(194,122,42,0.18);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12), 0 0 0 1.5px rgba(194,122,42,0.18);
 }
 .menu-item-card__body { position: relative; z-index: 1; }
 .menu-item-card__img  { position: relative; z-index: 1; }
 
 [data-theme="dark"] .menu-item-card {
-  background: var(--glass-bg);
-  border-color: var(--glass-border-warm);
-  border-top-color: rgba(232,168,74,0.14);
+  background: #2A2218;
+  border: 1px solid rgba(232,168,74,0.12);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="dark"] .menu-item-card::before {
-  background: linear-gradient(135deg, rgba(232,168,74,0.06) 0%, transparent 60%);
+  display: none;
 }
-[data-theme="dark"] .menu-item-card__name { color: #F5F0E8; }
-[data-theme="dark"] .menu-item-card__desc { color: #7A7060; }
+[data-theme="dark"] .menu-item-card:hover {
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 0 1.5px rgba(232,168,74,0.2);
+}
+[data-theme="dark"] .menu-item-card__name  { color: #F5F0E8; }
+[data-theme="dark"] .menu-item-card__desc  { color: #7A7060; }
 [data-theme="dark"] .menu-item-card__price { color: var(--amber-light); }
-[data-theme="dark"] .menu-item-card__body { background: transparent; }
+[data-theme="dark"] .menu-item-card__body  { background: transparent; }
 
 /* Category pills */
 .menu-cats__btn {
@@ -1387,27 +1389,25 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 /* Page sections subtle bg */
 .page-section { background: transparent; }
 .page-section-alt {
-  background: rgba(255,255,255,0.28);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--ivory);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 [data-theme="dark"] .page-section-alt {
-  background: rgba(0,0,0,0.15);
+  background: var(--surface-2, #2A2218);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* ════════════════════════════════════════════════════════
    SURFACE behind pages (layered gradient)
 ════════════════════════════════════════════════════════ */
 body {
-  background-image:
-    radial-gradient(ellipse at 20% 10%, rgba(232,168,74,0.07) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(42,107,82,0.05) 0%, transparent 50%);
+  background-image: none;
   background-attachment: fixed;
 }
 [data-theme="dark"] body {
-  background-image:
-    radial-gradient(ellipse at 20% 10%, rgba(232,168,74,0.05) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(42,107,82,0.04) 0%, transparent 50%);
+  background-image: none;
 }
 
 /* ════════════════════════════════════════════════════════
@@ -2550,4 +2550,33 @@ html { scroll-behavior: smooth; }
 .reveal-section.is-revealed .reveal-left  { animation: revealFadeLeft  0.70s cubic-bezier(0.22,1,0.36,1) 0.10s both; }
 .reveal-section.is-revealed .reveal-right { animation: revealFadeRight 0.70s cubic-bezier(0.22,1,0.36,1) 0.18s both; }
 .reveal-section.is-revealed .reveal-item  { animation: revealFadeUp    0.60s cubic-bezier(0.22,1,0.36,1) both; }
+
+
+/* ════════════════════════════════════════════════════════
+   ANIMATED BACKGROUND — Minimal integration
+   Canvas sits at z-index: -1 (behind everything)
+   Body is transparent so canvas base color shows through
+   All content sits at z-index: auto (normal flow, above canvas)
+════════════════════════════════════════════════════════ */
+
+/* Make body transparent so canvas bg color shows */
+body {
+  background: transparent !important;
+}
+
+/* Admin shell keeps solid bg — canvas not needed there */
+.admin-shell {
+  background: var(--ivory, #FAF6EE) !important;
+  position: relative;
+  z-index: 1;
+}
+[data-theme="dark"] .admin-shell {
+  background: var(--cream, #12100C) !important;
+}
+
+/* Reduce motion: hide canvas */
+@media (prefers-reduced-motion: reduce) {
+  canvas[aria-hidden="true"] { display: none !important; }
+  body { background: var(--cream) !important; }
+}
 

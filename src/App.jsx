@@ -20,6 +20,7 @@ import Auth        from './pages/public/Auth';
 import Profile     from './pages/public/Profile';
 import Admin       from './pages/admin/Admin';
 import DriverDashboard from './pages/driver/DriverDashboard';
+import AnimatedBackground from './components/layout/AnimatedBackground';
 
 /* ── Themed toaster ── */
 function ThemedToaster() {
@@ -82,6 +83,7 @@ export default function App() {
       <AuthProvider>
         <CartProvider>
           <Router>
+            <AnimatedBackground />
             <Routes>
               <Route path="/auth"    element={<Auth/>}/>
               <Route path="/admin/*" element={<Admin/>}/>

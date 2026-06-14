@@ -147,3 +147,32 @@ export const rejectPayment = async (id) =>
 
 export const getOrderByIdPoll = async (id) =>
   supabase.from('orders').select('id, status, payment_status, payment_slip_url, payment_method').eq('id', id).single();
+
+// ─── Featured Dishes (Chef's Selections) ──────────────────────────────────────
+// Public: only active dishes, ordered by sort_order
+export const getFeaturedDishesPublic = async () =>
+  supabase.from('featured_dishes')
+    .select('*, menu_items(*)')
+    .eq('active', true)
+    .order('sort_order', { ascending: true })
+    .limit(6);
+
+// Admin: all dishes regardless of active state
+export const getFeaturedDishes = async () =>
+  supabase.from('featured_dishes')
+    .select('*, menu_items(*)')
+    .order('sort_order', { ascending: true });
+
+export const createFeaturedDish = async (row) =>
+  supabase.from('featured_dishes').insert([row]).select('id, menu_item_id, image_url, sort_order, active, created_at');
+
+export const updateFeaturedDish = async (id, updates) =>
+  supabase.from('featured_dishes').update(updates).eq('id', id).select('id, menu_item_id, image_url, sort_order, active');
+
+export const deleteFeaturedDish = async (id) =>
+  supabase.from('featured_dishes').delete().eq('id', id);
+
+export const reorderFeaturedDishes = async (updates) =>
+  Promise.all(updates.map(({ id, sort_order }) =>
+    supabase.from('featured_dishes').update({ sort_order }).eq('id', id)
+  ));

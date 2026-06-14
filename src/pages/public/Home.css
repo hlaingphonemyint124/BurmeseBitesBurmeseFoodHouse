@@ -310,12 +310,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: auto;
+  gap: 10px;
 }
 .dish-card__price {
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 700;
   color: var(--amber-dark);
+  flex-shrink: 0;
 }
 .dish-card__add-sm {
   width: 32px; height: 32px;
@@ -330,6 +333,26 @@
   transition: var(--transition);
 }
 .dish-card__add-sm:hover { background: var(--amber-dark); transform: scale(1.1); }
+
+/* New: full-width Add to Order button replacing + icon */
+.dish-card__order-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--amber);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.18s cubic-bezier(0.34,1.4,0.64,1);
+  white-space: nowrap;
+}
+.dish-card__order-btn:hover {
+  background: var(--amber-dark);
+  transform: translateY(-1px) scale(1.04);
+}
+[data-theme="dark"] .dish-card__order-btn { background: var(--amber); color: #1E1A14; }
 
 /* ── Review cards ── */
 .home__reviews {
@@ -440,4 +463,25 @@
   .stats-bar__inner { flex-wrap: wrap; }
   .stats-bar__item { flex: 0 0 50%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); }
   .home__section-head { flex-direction: column; align-items: flex-start; gap: 16px; }
+}
+
+/* ── Featured section sign-in nudge ── */
+.featured-signin-nudge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 28px;
+  padding: 14px 24px;
+  background: rgba(194,122,42,0.06);
+  border: 1px solid rgba(194,122,42,0.18);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--brown);
+}
+.featured-signin-nudge svg { color: var(--amber-dark); flex-shrink: 0; }
+[data-theme="dark"] .featured-signin-nudge {
+  background: rgba(232,168,74,0.07);
+  border-color: rgba(232,168,74,0.15);
+  color: #A89880;
 }
