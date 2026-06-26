@@ -69,81 +69,109 @@
   padding: 0 16px;
 }
 
-/* Lightbox */
+/* ═══════════════════════════════
+   LIGHTBOX — perfectly centered
+═══════════════════════════════ */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lightboxImgIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 .lightbox {
   position: fixed;
   inset: 0;
-  background: rgba(10,8,5,0.93);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.2s ease;
-}
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.lightbox__inner {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
+  background: rgba(6, 4, 2, 0.95);
+  z-index: 9500;          /* above cart, above everything */
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.22s ease both;
 }
 
-.lightbox__img {
-  max-width: 90vw;
-  max-height: 78vh;
-  object-fit: contain;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  display: block;
-}
-
+/* Close button — top-right of screen */
 .lightbox__close {
   position: fixed;
   top: 20px; right: 20px;
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.12);
-  color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid rgba(255,255,255,0.2);
-  transition: var(--transition);
-  z-index: 1;
-}
-.lightbox__close:hover { background: rgba(255,255,255,0.25); }
-
-.lightbox__prev,
-.lightbox__next {
-  position: fixed;
-  top: 50%; transform: translateY(-50%);
-  width: 48px; height: 48px;
+  width: 46px; height: 46px;
   border-radius: 50%;
   background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
   color: #fff;
   display: flex; align-items: center; justify-content: center;
   border: 1.5px solid rgba(255,255,255,0.18);
-  transition: var(--transition);
+  transition: background 0.2s, transform 0.2s;
+  z-index: 2;
+  cursor: pointer;
 }
-.lightbox__prev:hover,
-.lightbox__next:hover { background: rgba(255,255,255,0.22); }
-.lightbox__prev { left: 20px; }
-.lightbox__next { right: 20px; }
+.lightbox__close:hover {
+  background: rgba(255,255,255,0.22);
+  transform: scale(1.08) rotate(90deg);
+}
+
+/* Prev / Next — vertically centered on screen sides */
+.lightbox__prev,
+.lightbox__next {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  transition: background 0.2s, transform 0.2s;
+  cursor: pointer;
+  z-index: 2;
+}
+.lightbox__prev:hover { background: rgba(255,255,255,0.2); transform: translateY(-50%) scale(1.08) translateX(-2px); }
+.lightbox__next:hover { background: rgba(255,255,255,0.2); transform: translateY(-50%) scale(1.08) translateX(2px); }
+.lightbox__prev { left: 24px; }
+.lightbox__next { right: 24px; }
+
+/* Image — centered, constrained */
+.lightbox__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(88vw, 1060px);  /* max width that leaves room for arrows */
+  padding: 0;
+  box-sizing: border-box;
+  /* No padding needed — arrows are outside this element */
+}
+
+.lightbox__img {
+  width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  display: block;
+  animation: lightboxImgIn 0.3s cubic-bezier(0.22,1,0.36,1) both;
+}
 
 .lightbox__caption {
-  margin-top: 16px;
+  margin-top: 18px;
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 15px;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255,255,255,0.72);
   text-align: center;
+  max-width: 600px;
+  line-height: 1.5;
 }
+
 .lightbox__counter {
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 12px;
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  color: rgba(255,255,255,0.38);
+  letter-spacing: 0.12em;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
@@ -153,4 +181,89 @@
   .gallery-masonry { columns: 1; }
   .lightbox__prev { left: 8px; }
   .lightbox__next { right: 8px; }
+}
+
+/* ── Lightbox improvements ── */
+.lightbox {
+  outline: none; /* remove focus ring on div, we use aria-modal */
+}
+.lightbox__close,
+.lightbox__prev,
+.lightbox__next {
+  min-width: 44px; min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+/* ── Gallery masonry tablet ── */
+@media (max-width: 768px) {
+  .gallery-masonry { columns: 2 !important; }
+}
+@media (max-width: 480px) {
+  .gallery-masonry { columns: 1 !important; }
+  .gallery-filter-btn { font-size: 13px; padding: 8px 16px; }
+}
+@media (max-width: 380px) {
+  .gallery-filters { flex-wrap: wrap; gap: 6px; }
+  .gallery-filter-btn { flex: 1; min-width: calc(50% - 4px); text-align: center; justify-content: center; }
+}
+
+/* ── Mobile lightbox ── */
+@media (max-width: 600px) {
+  .lightbox__prev { left: 8px !important; }
+  .lightbox__next { right: 8px !important; }
+  .lightbox__img  { max-width: 95vw !important; }
+}
+
+/* ── Gallery item: keyboard focus ── */
+.gallery-item:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+/* ── Skeleton items ── */
+.gallery-item--skeleton { pointer-events: none; }
+
+/* ── Animated background: page is transparent ── */
+.menu-page,
+.gallery-page,
+.reviews-page,
+.reservation-page,
+.about-page {
+  background: transparent !important;
+}
+
+/* ── Lightbox mobile responsive ── */
+@media (max-width: 768px) {
+  .lightbox__inner { padding: 60px 56px; }
+  .lightbox__prev  { left: 8px; }
+  .lightbox__next  { right: 8px; }
+}
+@media (max-width: 480px) {
+  .lightbox__inner { padding: 56px 48px; }
+  .lightbox__prev,
+  .lightbox__next  { width: 40px; height: 40px; }
+  .lightbox__img   { border-radius: 8px; max-height: 65vh; }
+}
+
+/* ── Gallery filter buttons: glass ── */
+.gallery-filter-btn {
+  background: rgba(255,252,247,0.55) !important;
+  backdrop-filter: blur(8px) !important;
+}
+[data-theme="dark"] .gallery-filter-btn {
+  background: rgba(18,14,8,0.5) !important;
+  border-color: rgba(232,168,74,0.15) !important;
+  color: #C8BEA8 !important;
+}
+.gallery-filter-btn--active {
+  background: var(--amber) !important;
+  color: #fff !important;
+  border-color: var(--amber) !important;
+}
+
+/* ── Gallery items: slight glass overlay ── */
+.gallery-item {
+  background: rgba(255,252,247,0.04);
 }

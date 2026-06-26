@@ -174,3 +174,48 @@
   .reviews-submit-form { padding: 20px; }
   .reviews-submit-card__header { padding: 20px; }
 }
+
+/* ── Reviews grid mobile ── */
+@media (max-width: 560px) {
+  .reviews-grid { grid-template-columns: 1fr !important; }
+  .reviews-summary { flex-direction: column !important; gap: 20px !important; padding: 20px !important; text-align: center; }
+  .reviews-summary__bars { width: 100%; }
+  .reviews-page__body { padding: 24px 0 60px !important; }
+  .reviews-submit-form { padding: 16px !important; }
+  .reviews-submit-card__header { padding: 16px !important; }
+}
+
+/* ── Animated background: page is transparent ── */
+.menu-page,
+.gallery-page,
+.reviews-page,
+.reservation-page,
+.about-page {
+  background: transparent !important;
+}
+
+/* ── Review cards: glass ── */
+.review-card {
+  background: rgba(255,252,247,0.62) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(194,122,42,0.1) !important;
+}
+[data-theme="dark"] .review-card {
+  background: rgba(30,22,12,0.65) !important;
+  border-color: rgba(232,168,74,0.1) !important;
+}
+
+/* Submit form: glass */
+.reviews-submit-form,
+.reviews-submit-card {
+  background: rgba(255,252,247,0.62) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(194,122,42,0.12) !important;
+}
+[data-theme="dark"] .reviews-submit-form,
+[data-theme="dark"] .reviews-submit-card {
+  background: rgba(30,22,12,0.68) !important;
+  border-color: rgba(232,168,74,0.12) !important;
+}

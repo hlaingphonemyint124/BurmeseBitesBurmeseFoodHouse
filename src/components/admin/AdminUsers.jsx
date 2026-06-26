@@ -1,170 +1,210 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Users, Search, Filter, MoreVertical, UserCheck, UserX,
-  Shield, ShieldOff, Trash2, Mail, Phone, Calendar,
-  ChevronDown, ChevronUp, Eye, RefreshCw, Download,
-  UserPlus, X, CheckCircle, AlertCircle, Clock,
-  Edit3, Save, Lock, Unlock, Ban, ArrowUpDown
+  Users, Search, RefreshCw, Download, X, CheckCircle,
+  AlertCircle, Eye, Edit3, Save, Trash2, Shield,
+  UserCheck, UserX, ShieldOff, ChevronUp, ChevronDown,
+  Mail, Phone, Calendar, Clock, Ban, MoreVertical,
+  Copy, ExternalLink, Filter
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 
-/* ─── helpers ─── */
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
-const fmtDateTime = (d) => d ? new Date(d).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-const initials = (name, email) => {
-  const n = name || email || '?';
-  return n.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase();
+/* ─── SQL to run in Supabase ─── */
+const SETUP_SQL = `-- 1. Create profiles table (synced with auth.users)
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id            uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name     text,
+  email         text,
+  phone         text,
+  role          text DEFAULT 'customer' CHECK (role IN ('customer','driver','admin')),
+  avatar_url    text,
+  banned        boolean DEFAULT false,
+  created_at    timestamptz DEFAULT now(),
+  updated_at    timestamptz DEFAULT now(),
+  last_sign_in  timestamptz
+);
+
+-- 2. Enable RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- 3. Policies
+CREATE POLICY "Public profiles readable" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admin full access" ON public.profiles FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- 4. Auto-create profile on signup trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, email, role, created_at)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email,'@',1)),
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'role', 'customer'),
+    NOW()
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 5. Backfill existing users into profiles
+INSERT INTO public.profiles (id, email, full_name, role, created_at)
+SELECT
+  id,
+  email,
+  COALESCE(raw_user_meta_data->>'full_name', split_part(email,'@',1)),
+  COALESCE(raw_user_meta_data->>'role', 'customer'),
+  created_at
+FROM auth.users
+ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email,
+  full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
+  updated_at = NOW();`;
+
+/* ─── Helpers ─── */
+const fmt     = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+const fmtDT   = d => d ? new Date(d).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+const initials= (name, email) => (name || email || '?').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+
+const ROLE_CFG = {
+  admin:    { bg:'rgba(194,122,42,0.14)', color:'#C27A2A', label:'Admin'    },
+  driver:   { bg:'rgba(42,107,82,0.12)',  color:'#2A6B52', label:'Driver'   },
+  customer: { bg:'rgba(59,130,246,0.10)', color:'#2563EB', label:'Customer' },
 };
-const roleColor = (role) => ({
-  admin:    { bg: 'rgba(194,122,42,0.12)', color: '#C27A2A', label: 'Admin' },
-  driver:   { bg: 'rgba(42,107,82,0.12)',  color: '#2A6B52', label: 'Driver' },
-  customer: { bg: 'rgba(60,90,160,0.10)',  color: '#3C5AA0', label: 'Customer' },
-}[role] || { bg: '#f0f0f0', color: '#666', label: role || 'Customer' });
+const rc = role => ROLE_CFG[role] || ROLE_CFG.customer;
 
-const statusColor = (confirmed) => confirmed
-  ? { bg: 'rgba(34,197,94,0.1)', color: '#16A34A', label: 'Verified' }
-  : { bg: 'rgba(234,179,8,0.1)',  color: '#CA8A04', label: 'Unverified' };
-
-/* ─── Sub-components ─── */
-function Badge({ bg, color, label, icon }) {
-  return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 10px', borderRadius:20, fontSize:11, fontWeight:600, background:bg, color, whiteSpace:'nowrap' }}>
-      {icon}{label}
-    </span>
-  );
-}
-
-function StatCard({ icon, label, value, sub, iconBg, iconColor }) {
-  return (
-    <div className="au-stat">
-      <div className="au-stat__icon" style={{ background: iconBg, color: iconColor }}>{icon}</div>
-      <div>
-        <div className="au-stat__value">{value}</div>
-        <div className="au-stat__label">{label}</div>
-        {sub && <div className="au-stat__sub">{sub}</div>}
-      </div>
-    </div>
-  );
-}
-
-function UserModal({ user: u, onClose, onUpdate }) {
-  const [tab, setTab] = useState('info');
-  const [editName, setEditName] = useState(u.user_metadata?.full_name || '');
-  const [editPhone, setEditPhone] = useState(u.user_metadata?.phone || '');
-  const [editRole, setEditRole] = useState(u.user_metadata?.role || 'customer');
+/* ─── User Detail Modal ─── */
+function UserModal({ user: u, onClose, onSaved }) {
+  const [tab,   setTab]   = useState('info');
+  const [form,  setForm]  = useState({
+    full_name: u.full_name || '',
+    phone:     u.phone     || '',
+    role:      u.role      || 'customer',
+  });
   const [saving, setSaving] = useState(false);
 
-  const handleSave = async () => {
+  const save = async () => {
     setSaving(true);
-    try {
-      const { error } = await supabase.auth.admin.updateUserById(u.id, {
-        user_metadata: { ...u.user_metadata, full_name: editName, phone: editPhone, role: editRole }
-      });
-      if (error) throw error;
-      toast.success('User updated successfully');
-      onUpdate();
-      onClose();
-    } catch (err) {
-      // Fallback: update via profiles table if admin API not available
-      try {
-        await supabase.from('profiles').upsert({ id: u.id, full_name: editName, phone: editPhone, role: editRole });
-        toast.success('Profile updated');
-        onUpdate();
-        onClose();
-      } catch {
-        toast.error('Update failed: ' + err.message);
-      }
-    }
+    const { error } = await supabase
+      .from('profiles')
+      .update({ ...form, updated_at: new Date().toISOString() })
+      .eq('id', u.id);
+    if (error) { toast.error(error.message); setSaving(false); return; }
+    toast.success('User updated');
+    onSaved();
+    onClose();
     setSaving(false);
   };
 
-  const rc = roleColor(u.user_metadata?.role || 'customer');
-  const sc = statusColor(u.email_confirmed_at);
-  const displayName = u.user_metadata?.full_name || u.email?.split('@')[0] || 'User';
+  const cfg = rc(u.role);
+  const name = u.full_name || u.email?.split('@')[0] || 'User';
 
   return (
-    <div className="au-modal-overlay" onClick={onClose}>
+    <div className="au-overlay" onClick={onClose}>
       <div className="au-modal" onClick={e => e.stopPropagation()}>
-        <div className="au-modal__header">
-          <div className="au-modal__avatar">{initials(displayName, u.email)}</div>
-          <div className="au-modal__header-info">
-            <h3>{displayName}</h3>
+        {/* Header */}
+        <div className="au-modal-hdr">
+          <div className="au-modal-avatar">{initials(name, u.email)}</div>
+          <div className="au-modal-info">
+            <h3>{name}</h3>
             <span>{u.email}</span>
-            <div style={{ display:'flex', gap:6, marginTop:6 }}>
-              <Badge {...rc} />
-              <Badge {...sc} />
+            <div style={{ display:'flex', gap:6, marginTop:6, flexWrap:'wrap' }}>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 10px', borderRadius:20, fontSize:11, fontWeight:600, background:cfg.bg, color:cfg.color }}>
+                {cfg.label}
+              </span>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 10px', borderRadius:20, fontSize:11, fontWeight:600,
+                background: u.email_verified ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)',
+                color: u.email_verified ? '#16A34A' : '#CA8A04' }}>
+                {u.email_verified ? '✓ Verified' : '⚠ Unverified'}
+              </span>
+              {u.banned && <span style={{ padding:'2px 10px', borderRadius:20, fontSize:11, fontWeight:600, background:'rgba(220,38,38,0.1)', color:'#DC2626' }}>Banned</span>}
             </div>
           </div>
-          <button className="au-modal__close" onClick={onClose}><X size={18}/></button>
+          <button className="au-modal-close" onClick={onClose}><X size={18}/></button>
         </div>
 
-        <div className="au-modal__tabs">
+        {/* Tabs */}
+        <div className="au-modal-tabs">
           {['info','edit','activity'].map(t => (
-            <button key={t} className={`au-modal__tab ${tab===t?'au-modal__tab--active':''}`} onClick={() => setTab(t)}>
+            <button key={t} className={`au-modal-tab ${tab===t?'active':''}`} onClick={()=>setTab(t)}>
               {t.charAt(0).toUpperCase()+t.slice(1)}
             </button>
           ))}
         </div>
 
-        {tab === 'info' && (
-          <div className="au-modal__body">
+        <div className="au-modal-body">
+          {tab === 'info' && (
             <div className="au-detail-grid">
-              <div className="au-detail-item"><span>User ID</span><code style={{fontSize:11}}>{u.id?.slice(0,18)}…</code></div>
-              <div className="au-detail-item"><span>Email</span><strong>{u.email}</strong></div>
-              <div className="au-detail-item"><span>Phone</span><strong>{u.user_metadata?.phone || '—'}</strong></div>
-              <div className="au-detail-item"><span>Role</span><Badge {...rc}/></div>
-              <div className="au-detail-item"><span>Status</span><Badge {...sc}/></div>
-              <div className="au-detail-item"><span>Auth Provider</span><strong style={{textTransform:'capitalize'}}>{u.app_metadata?.provider || 'email'}</strong></div>
-              <div className="au-detail-item"><span>Registered</span><strong>{fmtDateTime(u.created_at)}</strong></div>
-              <div className="au-detail-item"><span>Last Sign In</span><strong>{fmtDateTime(u.last_sign_in_at)}</strong></div>
-              <div className="au-detail-item"><span>Email Verified</span><strong>{u.email_confirmed_at ? fmtDate(u.email_confirmed_at) : 'Not verified'}</strong></div>
+              {[
+                ['User ID',     <code style={{fontSize:10}}>{u.id}</code>],
+                ['Email',       u.email],
+                ['Phone',       u.phone || '—'],
+                ['Role',        <span style={{color:cfg.color,fontWeight:600}}>{cfg.label}</span>],
+                ['Status',      u.email_verified ? 'Verified' : 'Unverified'],
+                ['Banned',      u.banned ? 'Yes' : 'No'],
+                ['Registered',  fmtDT(u.created_at)],
+                ['Last Sign In',fmtDT(u.last_sign_in)],
+              ].map(([label, val]) => (
+                <div key={label} className="au-detail-row">
+                  <span className="au-detail-label">{label}</span>
+                  <strong className="au-detail-val">{val}</strong>
+                </div>
+              ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {tab === 'edit' && (
-          <div className="au-modal__body">
+          {tab === 'edit' && (
             <div className="au-edit-form">
-              <div className="form-group">
-                <label>Full Name</label>
-                <input className="form-input" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Full name"/>
-              </div>
-              <div className="form-group">
-                <label>Phone</label>
-                <input className="form-input" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="+66 …"/>
-              </div>
-              <div className="form-group">
+              {[
+                { label:'Full Name',  key:'full_name', type:'text',   placeholder:'Full name'  },
+                { label:'Phone',      key:'phone',     type:'text',   placeholder:'+95 ...'    },
+              ].map(f => (
+                <div key={f.key} className="au-field">
+                  <label>{f.label}</label>
+                  <input type={f.type} value={form[f.key]} placeholder={f.placeholder}
+                    onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}/>
+                </div>
+              ))}
+              <div className="au-field">
                 <label>Role</label>
-                <select className="form-input form-select" value={editRole} onChange={e => setEditRole(e.target.value)}>
+                <select value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))}>
                   <option value="customer">Customer</option>
                   <option value="driver">Driver</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{marginTop:8}}>
-                <Save size={14}/> {saving ? 'Saving…' : 'Save Changes'}
+              <button className="btn btn-primary" onClick={save} disabled={saving}
+                style={{marginTop:8,display:'flex',alignItems:'center',gap:6}}>
+                <Save size={14}/>{saving?'Saving…':'Save Changes'}
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {tab === 'activity' && (
-          <div className="au-modal__body">
-            <div className="au-activity-timeline">
+          {tab === 'activity' && (
+            <div className="au-timeline">
               {[
-                { icon: <CheckCircle size={14}/>, color:'#16A34A', label:'Account created', time: fmtDateTime(u.created_at) },
-                u.email_confirmed_at && { icon: <Mail size={14}/>, color:'#2563EB', label:'Email verified', time: fmtDateTime(u.email_confirmed_at) },
-                u.last_sign_in_at && { icon: <UserCheck size={14}/>, color:'#7C3AED', label:'Last sign in', time: fmtDateTime(u.last_sign_in_at) },
-              ].filter(Boolean).map((item, i) => (
-                <div key={i} className="au-timeline-item">
-                  <div className="au-timeline-dot" style={{ background: item.color + '20', color: item.color }}>{item.icon}</div>
-                  <div><p>{item.label}</p><span>{item.time}</span></div>
+                { icon:<CheckCircle size={14}/>, color:'#16A34A', label:'Account created',  time: fmtDT(u.created_at) },
+                u.email_verified && { icon:<Mail size={14}/>, color:'#2563EB', label:'Email verified', time:'Verified' },
+                u.last_sign_in && { icon:<UserCheck size={14}/>, color:'#7C3AED', label:'Last sign in', time: fmtDT(u.last_sign_in) },
+                u.banned && { icon:<Ban size={14}/>, color:'#DC2626', label:'Account banned', time:'' },
+              ].filter(Boolean).map((item,i)=>(
+                <div key={i} className="au-tl-item">
+                  <div className="au-tl-dot" style={{background:item.color+'18',color:item.color}}>{item.icon}</div>
+                  <div><p className="au-tl-label">{item.label}</p><span className="au-tl-time">{item.time}</span></div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -172,279 +212,302 @@ function UserModal({ user: u, onClose, onUpdate }) {
 
 /* ─── Main Component ─── */
 export default function AdminUsers() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortDir, setSortDir] = useState('desc');
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [actionMenu, setActionMenu] = useState(null);
-  const [page, setPage] = useState(1);
-  const PER_PAGE = 12;
+  const [users,    setUsers]    = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [search,   setSearch]   = useState('');
+  const [roleF,    setRoleF]    = useState('all');
+  const [statusF,  setStatusF]  = useState('all');
+  const [sortBy,   setSortBy]   = useState('created_at');
+  const [sortDir,  setSortDir]  = useState('desc');
+  const [page,     setPage]     = useState(1);
+  const [selected, setSelected] = useState(null);
+  const [showSQL,  setShowSQL]  = useState(false);
+  const [dbErr,    setDbErr]    = useState(null);
+  const PER = 12;
 
+  /* ── Fetch from profiles table ── */
   const fetchUsers = useCallback(async () => {
     setLoading(true);
-    try {
-      // Try admin API first
-      const { data, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      if (error) throw error;
-      setUsers(data.users || []);
-    } catch {
-      // Fallback: fetch from profiles table
-      try {
-        const { data: profiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-        if (profiles) {
-          setUsers(profiles.map(p => ({
-            id: p.id, email: p.email || '', created_at: p.created_at,
-            last_sign_in_at: p.last_sign_in_at, email_confirmed_at: p.email_confirmed_at,
-            user_metadata: { full_name: p.full_name, phone: p.phone, role: p.role },
-            app_metadata: { provider: 'email' }
-          })));
-        }
-      } catch {
-        toast.error('Could not load users. Admin API access required.');
-        setUsers([]);
-      }
+    setDbErr(null);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      setDbErr(error);
+      setLoading(false);
+      return;
     }
+    setUsers(data || []);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
-
-  // Close action menu on outside click
   useEffect(() => {
-    const handler = () => setActionMenu(null);
-    document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
-  }, []);
+    fetchUsers();
+    // Real-time subscription
+    const ch = supabase.channel('profiles_admin')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchUsers)
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }, [fetchUsers]);
 
-  const handleBanUser = async (userId, banned) => {
-    try {
-      const { error } = await supabase.auth.admin.updateUserById(userId, { ban_duration: banned ? 'none' : '876600h' });
-      if (error) throw error;
-      toast.success(banned ? 'User unbanned' : 'User banned');
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.message);
-    }
-    setActionMenu(null);
+  /* ── Update role ── */
+  const updateRole = async (id, role) => {
+    const { error } = await supabase.from('profiles').update({ role, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Role updated to ${role}`);
+    fetchUsers();
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure? This action cannot be undone.')) return;
-    try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      if (error) throw error;
-      toast.success('User deleted');
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.message);
-    }
-    setActionMenu(null);
+  /* ── Toggle ban ── */
+  const toggleBan = async (id, banned) => {
+    const { error } = await supabase.from('profiles').update({ banned: !banned, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(!banned ? 'User banned' : 'User unbanned');
+    fetchUsers();
   };
 
-  const handleRoleChange = async (userId, meta, newRole) => {
-    try {
-      await supabase.auth.admin.updateUserById(userId, { user_metadata: { ...meta, role: newRole } });
-      toast.success(`Role updated to ${newRole}`);
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.message);
-    }
-    setActionMenu(null);
+  /* ── Delete ── */
+  const deleteUser = async (id) => {
+    if (!window.confirm('Delete this user profile? This cannot be undone.')) return;
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    toast.success('User deleted');
+    fetchUsers();
   };
 
-  const handleExport = () => {
-    const rows = [['Name','Email','Role','Status','Registered','Last Sign In']];
+  /* ── Export CSV ── */
+  const exportCSV = () => {
+    const rows = [['Name','Email','Role','Verified','Banned','Registered','Last Sign In']];
     filtered.forEach(u => rows.push([
-      u.user_metadata?.full_name || '',
-      u.email,
-      u.user_metadata?.role || 'customer',
-      u.email_confirmed_at ? 'Verified' : 'Unverified',
-      fmtDate(u.created_at),
-      fmtDate(u.last_sign_in_at),
+      u.full_name||'', u.email||'', u.role||'customer',
+      u.email_verified?'Yes':'No', u.banned?'Yes':'No',
+      fmt(u.created_at), fmt(u.last_sign_in)
     ]));
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'users_export.csv'; a.click();
-    toast.success('Users exported');
+    const blob = new Blob([rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n')], {type:'text/csv'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `users_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    toast.success('Exported!');
   };
 
-  // Filtering + sorting
-  const filtered = users
-    .filter(u => {
-      const name = u.user_metadata?.full_name || '';
-      const q = search.toLowerCase();
-      if (q && !name.toLowerCase().includes(q) && !u.email?.toLowerCase().includes(q)) return false;
-      if (roleFilter !== 'all' && (u.user_metadata?.role || 'customer') !== roleFilter) return false;
-      if (statusFilter === 'verified' && !u.email_confirmed_at) return false;
-      if (statusFilter === 'unverified' && u.email_confirmed_at) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      let aVal = sortBy === 'name' ? (a.user_metadata?.full_name || a.email) : (a[sortBy] || '');
-      let bVal = sortBy === 'name' ? (b.user_metadata?.full_name || b.email) : (b[sortBy] || '');
-      return sortDir === 'asc' ? aVal > bVal ? 1 : -1 : aVal < bVal ? 1 : -1;
-    });
-
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-  const toggleSort = (col) => {
-    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+  /* ── Sort toggle ── */
+  const toggleSort = col => {
+    if (sortBy===col) setSortDir(d=>d==='asc'?'desc':'asc');
     else { setSortBy(col); setSortDir('desc'); }
     setPage(1);
   };
 
-  // Stats
-  const totalUsers = users.length;
-  const admins = users.filter(u => u.user_metadata?.role === 'admin').length;
-  const drivers = users.filter(u => u.user_metadata?.role === 'driver').length;
-  const verified = users.filter(u => u.email_confirmed_at).length;
+  /* ── Filter + sort ── */
+  const filtered = users.filter(u => {
+    const q = search.toLowerCase();
+    if (q && !(u.full_name||'').toLowerCase().includes(q) && !(u.email||'').toLowerCase().includes(q)) return false;
+    if (roleF!=='all' && (u.role||'customer')!==roleF) return false;
+    if (statusF==='verified'   && !u.email_verified) return false;
+    if (statusF==='unverified' &&  u.email_verified) return false;
+    if (statusF==='banned'     && !u.banned)         return false;
+    return true;
+  }).sort((a,b) => {
+    const av = sortBy==='name'?(a.full_name||a.email||''):(a[sortBy]||'');
+    const bv = sortBy==='name'?(b.full_name||b.email||''):(b[sortBy]||'');
+    return sortDir==='asc' ? (av>bv?1:-1) : (av<bv?1:-1);
+  });
+
+  const pages    = Math.ceil(filtered.length / PER);
+  const paged    = filtered.slice((page-1)*PER, page*PER);
   const thisMonth = users.filter(u => {
     if (!u.created_at) return false;
-    const d = new Date(u.created_at);
-    const now = new Date();
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    const d = new Date(u.created_at), now = new Date();
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
   }).length;
 
+  const SortIcon = ({col}) => sortBy===col ? (sortDir==='asc'?<ChevronUp size={12}/>:<ChevronDown size={12}/>) : null;
+
   return (
-    <div className="au-page">
+    <div className="au">
       <style>{`
-        .au-page { padding: 0; }
-        .au-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px; }
-        .au-header__left h2 { font-size:22px; font-weight:700; margin:0 0 4px; color:var(--charcoal); }
-        .au-header__left p { font-size:13px; color:#888; margin:0; }
-        .au-header__actions { display:flex; gap:8px; flex-wrap:wrap; }
-        .au-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:24px; }
-        .au-stat { background:var(--surface,#fff); border:1px solid var(--border,#e8e0d4); border-radius:12px; padding:16px; display:flex; align-items:center; gap:14px; }
-        .au-stat__icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .au-stat__value { font-size:22px; font-weight:700; color:var(--charcoal); line-height:1; }
-        .au-stat__label { font-size:11px; color:#888; margin-top:2px; }
-        .au-stat__sub { font-size:11px; color:#16A34A; margin-top:2px; font-weight:500; }
-
-        .au-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
-        .au-search { position:relative; flex:1; min-width:200px; }
-        .au-search input { width:100%; padding:9px 12px 9px 36px; border:1px solid var(--border,#e8e0d4); border-radius:8px; font-size:13px; background:var(--surface,#fff); color:var(--charcoal); outline:none; box-sizing:border-box; }
-        .au-search input:focus { border-color:var(--amber-light); }
-        .au-search__icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#aaa; pointer-events:none; }
-        .au-filter select { padding:9px 12px; border:1px solid var(--border,#e8e0d4); border-radius:8px; font-size:13px; background:var(--surface,#fff); color:var(--charcoal); cursor:pointer; outline:none; }
-
-        .au-table-wrap { background:var(--surface,#fff); border:1px solid var(--border,#e8e0d4); border-radius:14px; overflow:hidden; }
-        .au-table { width:100%; border-collapse:collapse; }
-        .au-table th { padding:11px 16px; text-align:left; font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.06em; background:var(--bg-subtle,#f9f6f2); border-bottom:1px solid var(--border,#e8e0d4); white-space:nowrap; cursor:pointer; user-select:none; }
-        .au-table th:hover { color:var(--charcoal); }
-        .au-table td { padding:13px 16px; font-size:13px; color:var(--charcoal); border-bottom:1px solid var(--border,#e8e0d4); vertical-align:middle; }
-        .au-table tr:last-child td { border-bottom:none; }
-        .au-table tbody tr:hover { background:var(--bg-subtle,#f9f6f2); }
-
-        .au-user-cell { display:flex; align-items:center; gap:10px; }
-        .au-avatar { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; background:rgba(194,122,42,0.15); color:#C27A2A; }
-        .au-user-cell__info p { margin:0; font-weight:500; font-size:13px; }
-        .au-user-cell__info span { font-size:11px; color:#888; }
-
-        .au-action-wrap { position:relative; }
-        .au-action-btn { background:none; border:1px solid var(--border,#e8e0d4); border-radius:6px; padding:5px 7px; cursor:pointer; color:#888; display:flex; align-items:center; }
-        .au-action-btn:hover { border-color:var(--amber-light); color:var(--amber-light); }
-        .au-action-menu { position:absolute; right:0; top:calc(100% + 6px); background:var(--surface,#fff); border:1px solid var(--border,#e8e0d4); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:100; min-width:180px; overflow:hidden; }
-        .au-action-menu button { display:flex; align-items:center; gap:8px; width:100%; padding:10px 14px; background:none; border:none; font-size:13px; cursor:pointer; color:var(--charcoal); text-align:left; }
-        .au-action-menu button:hover { background:var(--bg-subtle,#f9f6f2); }
-        .au-action-menu__divider { border:none; border-top:1px solid var(--border,#e8e0d4); margin:4px 0; }
-        .au-action-menu .danger { color:#DC2626; }
-
-        .au-pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-top:1px solid var(--border,#e8e0d4); font-size:13px; color:#888; flex-wrap:wrap; gap:8px; }
-        .au-pagination__pages { display:flex; gap:6px; }
-        .au-pagination__btn { padding:5px 10px; border:1px solid var(--border,#e8e0d4); border-radius:6px; background:none; cursor:pointer; font-size:13px; color:var(--charcoal); }
-        .au-pagination__btn:hover { border-color:var(--amber-light); color:var(--amber-light); }
-        .au-pagination__btn--active { background:var(--amber-light); border-color:var(--amber-light); color:#fff; font-weight:600; }
-        .au-pagination__btn:disabled { opacity:0.4; cursor:not-allowed; }
-
-        .au-empty { text-align:center; padding:60px 20px; color:#aaa; }
-        .au-empty svg { margin-bottom:12px; opacity:0.3; }
-
+        .au{}
+        /* Header */
+        .au-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+        .au-hdr h2{font-size:22px;font-weight:700;margin:0 0 4px;color:var(--charcoal)}
+        .au-hdr p{font-size:13px;color:#888;margin:0}
+        .au-hdr-btns{display:flex;gap:8px;flex-wrap:wrap}
+        /* SQL */
+        .au-sql{background:rgba(194,122,42,0.07);border:1px solid rgba(194,122,42,0.25);border-radius:12px;padding:16px;margin-bottom:20px}
+        .au-sql p{font-size:13px;color:var(--amber-dark);margin:0 0 8px;font-weight:500}
+        .au-sql pre{font-size:11px;background:rgba(0,0,0,0.05);padding:12px;border-radius:8px;overflow-x:auto;margin:0;font-family:monospace;line-height:1.6;color:var(--charcoal);white-space:pre-wrap}
+        /* Error */
+        .au-err{background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.25);border-radius:12px;padding:16px;margin-bottom:20px}
+        .au-err-title{font-size:13px;font-weight:600;color:#DC2626;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+        .au-err pre{font-size:11px;background:rgba(0,0,0,0.05);padding:10px;border-radius:6px;margin:0;font-family:monospace;white-space:pre-wrap;color:#991B1B}
+        /* Stats */
+        .au-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+        .au-stat{background:var(--surface-1,#fff);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px}
+        .au-stat__icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .au-stat__value{font-size:22px;font-weight:700;color:var(--charcoal);line-height:1}
+        .au-stat__label{font-size:11px;color:#888;margin-top:2px}
+        .au-stat__sub{font-size:11px;color:#16A34A;margin-top:2px;font-weight:500}
+        /* Toolbar */
+        .au-toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+        .au-search{position:relative;flex:1;min-width:200px}
+        .au-search input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface-0,#fff);color:var(--charcoal);outline:none;box-sizing:border-box}
+        .au-search input:focus{border-color:var(--amber)}
+        .au-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#aaa;pointer-events:none}
+        .au-filter select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface-0,#fff);color:var(--charcoal);outline:none;cursor:pointer}
+        /* Table */
+        .au-wrap{background:var(--surface-1,#fff);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+        .au-tbl{width:100%;border-collapse:collapse}
+        .au-tbl th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;background:var(--ivory,#FAF6EE);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+        .au-tbl th:hover{color:var(--charcoal)}
+        .au-tbl td{padding:12px 14px;font-size:13px;color:var(--charcoal);border-bottom:1px solid var(--border);vertical-align:middle}
+        .au-tbl tr:last-child td{border-bottom:none}
+        .au-tbl tbody tr:hover{background:var(--ivory,#FAF6EE)}
+        /* User cell */
+        .au-user{display:flex;align-items:center;gap:10px}
+        .au-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:rgba(194,122,42,0.14);color:#C27A2A}
+        .au-user-name{font-weight:500;font-size:13px;margin:0}
+        .au-user-email{font-size:11px;color:#888;margin:0}
+        /* Action menu */
+        .au-action-wrap{position:relative}
+        .au-action-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 7px;cursor:pointer;color:#888;display:flex;align-items:center;transition:all .18s}
+        .au-action-btn:hover{border-color:var(--amber);color:var(--amber-dark)}
+        .au-action-menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface-1,#fff);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;min-width:185px;overflow:hidden}
+        .au-action-menu button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;font-size:13px;cursor:pointer;color:var(--charcoal);text-align:left;transition:background .15s}
+        .au-action-menu button:hover{background:var(--ivory,#FAF6EE)}
+        .au-action-menu hr{border:none;border-top:1px solid var(--border);margin:4px 0}
+        .au-action-menu .danger{color:#DC2626}
+        /* Pagination */
+        .au-pag{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-top:1px solid var(--border);font-size:13px;color:#888;flex-wrap:wrap;gap:8px}
+        .au-pag-btns{display:flex;gap:5px}
+        .au-pag-btn{padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-size:13px;color:var(--charcoal);transition:all .15s}
+        .au-pag-btn:hover{border-color:var(--amber);color:var(--amber-dark)}
+        .au-pag-btn.active{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:600}
+        .au-pag-btn:disabled{opacity:.4;cursor:not-allowed}
+        /* Empty */
+        .au-empty{text-align:center;padding:60px 24px;color:#aaa}
+        .au-empty svg{opacity:.25;margin-bottom:12px}
         /* Modal */
-        .au-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
-        .au-modal { background:var(--surface,#fff); border-radius:16px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,0.2); }
-        .au-modal__header { display:flex; align-items:flex-start; gap:14px; padding:24px 24px 16px; border-bottom:1px solid var(--border,#e8e0d4); }
-        .au-modal__avatar { width:52px; height:52px; border-radius:50%; background:rgba(194,122,42,0.15); color:#C27A2A; font-size:18px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .au-modal__header-info { flex:1; }
-        .au-modal__header-info h3 { margin:0 0 2px; font-size:16px; font-weight:700; }
-        .au-modal__header-info span { font-size:12px; color:#888; }
-        .au-modal__close { background:none; border:none; cursor:pointer; color:#aaa; padding:4px; border-radius:6px; }
-        .au-modal__close:hover { color:var(--charcoal); background:var(--bg-subtle,#f9f6f2); }
-        .au-modal__tabs { display:flex; border-bottom:1px solid var(--border,#e8e0d4); padding:0 24px; }
-        .au-modal__tab { padding:12px 16px; border:none; background:none; cursor:pointer; font-size:13px; color:#888; border-bottom:2px solid transparent; margin-bottom:-1px; }
-        .au-modal__tab--active { color:var(--amber-light); border-bottom-color:var(--amber-light); font-weight:600; }
-        .au-modal__body { padding:20px 24px 24px; }
-
-        .au-detail-grid { display:grid; gap:12px; }
-        .au-detail-item { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--bg-subtle,#f9f6f2); border-radius:8px; gap:12px; }
-        .au-detail-item span { font-size:12px; color:#888; flex-shrink:0; }
-        .au-detail-item strong { font-size:13px; font-weight:500; text-align:right; }
-
-        .au-edit-form { display:flex; flex-direction:column; gap:14px; }
-        .au-timeline-item { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--border,#e8e0d4); }
-        .au-timeline-item:last-child { border-bottom:none; }
-        .au-timeline-dot { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
-        .au-timeline-item p { margin:0; font-size:13px; font-weight:500; }
-        .au-timeline-item span { font-size:11px; color:#888; }
-
-        .au-loading { display:flex; align-items:center; justify-content:center; padding:60px; }
-        .au-count-badge { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:var(--amber-light); color:#fff; font-size:10px; font-weight:700; }
-
-        /* Dark mode overrides */
-        [data-theme="dark"] .au-table-wrap,
-        [data-theme="dark"] .au-stat { background:var(--surface-1,#1E1A14); border-color:rgba(255,255,255,0.08); }
-        [data-theme="dark"] .au-table th { background:var(--surface-2,#2A2218); }
-        [data-theme="dark"] .au-table tbody tr:hover { background:var(--surface-2,#2A2218); }
+        .au-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+        .au-modal{background:var(--surface-1,#fff);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.2)}
+        .au-modal-hdr{display:flex;align-items:flex-start;gap:14px;padding:22px 22px 14px;border-bottom:1px solid var(--border)}
+        .au-modal-avatar{width:50px;height:50px;border-radius:50%;background:rgba(194,122,42,0.14);color:#C27A2A;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .au-modal-info{flex:1}
+        .au-modal-info h3{margin:0 0 2px;font-size:16px;font-weight:700;color:var(--charcoal)}
+        .au-modal-info span{font-size:12px;color:#888}
+        .au-modal-close{background:none;border:none;cursor:pointer;color:#aaa;padding:4px;border-radius:6px;align-self:flex-start}
+        .au-modal-close:hover{color:var(--charcoal);background:var(--ivory,#FAF6EE)}
+        .au-modal-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 22px}
+        .au-modal-tab{padding:11px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .18s}
+        .au-modal-tab.active{color:var(--amber-dark);border-bottom-color:var(--amber-dark);font-weight:600}
+        .au-modal-body{padding:18px 22px 22px}
+        /* Detail grid */
+        .au-detail-grid{display:flex;flex-direction:column;gap:10px}
+        .au-detail-row{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;background:var(--ivory,#FAF6EE);border-radius:8px;gap:12px}
+        .au-detail-label{font-size:12px;color:#888;flex-shrink:0}
+        .au-detail-val{font-size:13px;font-weight:500;text-align:right;word-break:break-all}
+        /* Edit form */
+        .au-edit-form{display:flex;flex-direction:column;gap:14px}
+        .au-field{display:flex;flex-direction:column;gap:5px}
+        .au-field label{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.03em}
+        .au-field input,.au-field select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface-0,#fff);color:var(--charcoal);outline:none;transition:border-color .2s}
+        .au-field input:focus,.au-field select:focus{border-color:var(--amber)}
+        /* Timeline */
+        .au-timeline{display:flex;flex-direction:column;gap:0}
+        .au-tl-item{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+        .au-tl-item:last-child{border-bottom:none}
+        .au-tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .au-tl-label{margin:0;font-size:13px;font-weight:500;color:var(--charcoal)}
+        .au-tl-time{font-size:11px;color:#888}
+        /* Dark mode */
+        [data-theme="dark"] .au-stat,
+        [data-theme="dark"] .au-wrap,
+        [data-theme="dark"] .au-modal{background:#1E1A14;border-color:rgba(255,255,255,0.08)}
+        [data-theme="dark"] .au-tbl th{background:#161210;color:#888}
+        [data-theme="dark"] .au-tbl tbody tr:hover{background:#2A2218}
         [data-theme="dark"] .au-search input,
-        [data-theme="dark"] .au-filter select { background:var(--surface-1,#1E1A14); border-color:rgba(255,255,255,0.10); color:var(--charcoal,#F5F0E8); }
-        [data-theme="dark"] .au-modal { background:var(--surface-1,#1E1A14); }
-        [data-theme="dark"] .au-modal__header,
-        [data-theme="dark"] .au-modal__tabs,
-        [data-theme="dark"] .au-pagination { border-color:rgba(255,255,255,0.08); }
-        [data-theme="dark"] .au-detail-item { background:var(--surface-2,#2A2218); }
-        [data-theme="dark"] .au-timeline-item { border-color:rgba(255,255,255,0.08); }
-        [data-theme="dark"] .au-action-menu { background:var(--surface-1,#1E1A14); border-color:rgba(255,255,255,0.10); }
-        [data-theme="dark"] .au-action-menu button:hover { background:var(--surface-2,#2A2218); }
-        [data-theme="dark"] .au-action-menu__divider { border-color:rgba(255,255,255,0.08); }
+        [data-theme="dark"] .au-filter select,
+        [data-theme="dark"] .au-field input,
+        [data-theme="dark"] .au-field select{background:#1E1A14;border-color:rgba(255,255,255,0.1);color:#F5F0E8}
+        [data-theme="dark"] .au-action-menu{background:#1E1A14;border-color:rgba(255,255,255,0.1)}
+        [data-theme="dark"] .au-action-menu button:hover{background:#2A2218}
+        [data-theme="dark"] .au-action-menu hr{border-color:rgba(255,255,255,0.08)}
+        [data-theme="dark"] .au-detail-row{background:#2A2218}
+        [data-theme="dark"] .au-modal-hdr,
+        [data-theme="dark"] .au-modal-tabs,
+        [data-theme="dark"] .au-pag{border-color:rgba(255,255,255,0.08)}
+        [data-theme="dark"] .au-tl-item{border-color:rgba(255,255,255,0.08)}
       `}</style>
 
-      <div className="au-header">
-        <div className="au-header__left">
+      {/* ── Header ── */}
+      <div className="au-hdr">
+        <div>
           <h2>User Management</h2>
-          <p>{totalUsers} total users registered</p>
+          <p>{users.length} total users registered</p>
         </div>
-        <div className="au-header__actions">
-          <button className="btn btn-outline" onClick={fetchUsers} style={{ display:'flex', alignItems:'center', gap:6 }}>
+        <div className="au-hdr-btns">
+          <button className="btn btn-outline" onClick={()=>setShowSQL(s=>!s)}
+            style={{fontSize:12,display:'flex',alignItems:'center',gap:6}}>
+            {showSQL?'Hide':'Show'} SQL Setup
+          </button>
+          <button className="btn btn-outline" onClick={fetchUsers}
+            style={{display:'flex',alignItems:'center',gap:6}}>
             <RefreshCw size={14}/> Refresh
           </button>
-          <button className="btn btn-outline" onClick={handleExport} style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <button className="btn btn-outline" onClick={exportCSV}
+            style={{display:'flex',alignItems:'center',gap:6}}>
             <Download size={14}/> Export CSV
           </button>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* ── SQL Setup ── */}
+      {showSQL && (
+        <div className="au-sql">
+          <p>📋 Run this SQL once in your Supabase SQL Editor to enable real-time user management:</p>
+          <pre>{SETUP_SQL}</pre>
+        </div>
+      )}
+
+      {/* ── Error ── */}
+      {dbErr && (
+        <div className="au-err">
+          <p className="au-err-title"><AlertCircle size={15}/> Could not load profiles table</p>
+          <pre>{JSON.stringify(dbErr, null, 2)}</pre>
+          <p style={{fontSize:12,color:'#991B1B',margin:'8px 0 0'}}>
+            Click "Show SQL Setup" above and run the SQL in your Supabase dashboard.
+          </p>
+        </div>
+      )}
+
+      {/* ── Stats ── */}
       <div className="au-stats">
-        <StatCard icon={<Users size={18}/>}     label="Total Users"     value={totalUsers} sub={`+${thisMonth} this month`} iconBg="rgba(60,90,160,0.1)"   iconColor="#3C5AA0"/>
-        <StatCard icon={<CheckCircle size={18}/>} label="Verified"      value={verified}   iconBg="rgba(34,197,94,0.1)"    iconColor="#16A34A"/>
-        <StatCard icon={<Shield size={18}/>}    label="Admins"          value={admins}     iconBg="rgba(194,122,42,0.12)"  iconColor="#C27A2A"/>
-        <StatCard icon={<UserCheck size={18}/>} label="Drivers"         value={drivers}    iconBg="rgba(42,107,82,0.12)"   iconColor="#2A6B52"/>
-        <StatCard icon={<AlertCircle size={18}/>} label="Unverified"    value={totalUsers - verified} iconBg="rgba(234,179,8,0.1)" iconColor="#CA8A04"/>
+        {[
+          { icon:<Users size={17}/>,      bg:'rgba(59,130,246,0.1)',  color:'#2563EB', val:users.length,                                          label:'Total Users',  sub:`+${thisMonth} this month` },
+          { icon:<CheckCircle size={17}/>, bg:'rgba(34,197,94,0.1)',  color:'#16A34A', val:users.filter(u=>u.email_verified).length,               label:'Verified'      },
+          { icon:<Shield size={17}/>,      bg:'rgba(194,122,42,0.12)',color:'#C27A2A', val:users.filter(u=>u.role==='admin').length,                label:'Admins'        },
+          { icon:<UserCheck size={17}/>,   bg:'rgba(42,107,82,0.12)', color:'#2A6B52', val:users.filter(u=>u.role==='driver').length,               label:'Drivers'       },
+          { icon:<Ban size={17}/>,         bg:'rgba(220,38,38,0.1)',  color:'#DC2626', val:users.filter(u=>u.banned).length,                        label:'Banned'        },
+        ].map((s,i)=>(
+          <div key={i} className="au-stat">
+            <div className="au-stat__icon" style={{background:s.bg,color:s.color}}>{s.icon}</div>
+            <div>
+              <div className="au-stat__value">{s.val}</div>
+              <div className="au-stat__label">{s.label}</div>
+              {s.sub && <div className="au-stat__sub">{s.sub}</div>}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Toolbar */}
+      {/* ── Toolbar ── */}
       <div className="au-toolbar">
         <div className="au-search">
-          <Search size={14} className="au-search__icon"/>
-          <input placeholder="Search by name or email…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}/>
+          <Search size={14} className="au-search-icon"/>
+          <input placeholder="Search by name or email…" value={search}
+            onChange={e=>{setSearch(e.target.value);setPage(1)}}/>
         </div>
         <div className="au-filter">
-          <select value={roleFilter} onChange={e => { setRoleFilter(e.target.value); setPage(1); }}>
+          <select value={roleF} onChange={e=>{setRoleF(e.target.value);setPage(1)}}>
             <option value="all">All Roles</option>
             <option value="customer">Customer</option>
             <option value="driver">Driver</option>
@@ -452,102 +515,82 @@ export default function AdminUsers() {
           </select>
         </div>
         <div className="au-filter">
-          <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
+          <select value={statusF} onChange={e=>{setStatusF(e.target.value);setPage(1)}}>
             <option value="all">All Statuses</option>
             <option value="verified">Verified</option>
             <option value="unverified">Unverified</option>
+            <option value="banned">Banned</option>
           </select>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="au-table-wrap">
+      {/* ── Table ── */}
+      <div className="au-wrap">
         {loading ? (
-          <div className="au-loading"><div className="spinner"/></div>
-        ) : filtered.length === 0 ? (
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:64}}>
+            <div className="spinner"/>
+          </div>
+        ) : paged.length === 0 ? (
           <div className="au-empty">
             <Users size={40}/>
-            <p>No users found</p>
+            <p>{users.length===0?'No users yet — run the SQL setup above to sync your auth users.':'No users match your filters.'}</p>
           </div>
         ) : (
           <>
-            <table className="au-table">
+            <table className="au-tbl">
               <thead>
                 <tr>
-                  <th onClick={() => toggleSort('name')} style={{ minWidth:200 }}>
-                    User {sortBy==='name' && (sortDir==='asc'?<ChevronUp size={12}/>:<ChevronDown size={12}/>)}
+                  <th onClick={()=>toggleSort('name')} style={{minWidth:200}}>
+                    User <SortIcon col="name"/>
                   </th>
                   <th>Role</th>
                   <th>Status</th>
-                  <th onClick={() => toggleSort('created_at')} style={{ minWidth:120 }}>
-                    Registered {sortBy==='created_at' && (sortDir==='asc'?<ChevronUp size={12}/>:<ChevronDown size={12}/>)}
+                  <th onClick={()=>toggleSort('created_at')} style={{minWidth:110}}>
+                    Registered <SortIcon col="created_at"/>
                   </th>
-                  <th onClick={() => toggleSort('last_sign_in_at')} style={{ minWidth:120 }}>
-                    Last Sign In {sortBy==='last_sign_in_at' && (sortDir==='asc'?<ChevronUp size={12}/>:<ChevronDown size={12}/>)}
+                  <th onClick={()=>toggleSort('last_sign_in')} style={{minWidth:110}}>
+                    Last Sign In <SortIcon col="last_sign_in"/>
                   </th>
-                  <th style={{ width:60, textAlign:'center' }}>Actions</th>
+                  <th style={{width:50,textAlign:'center'}}>⋯</th>
                 </tr>
               </thead>
               <tbody>
-                {paginated.map(u => {
-                  const name = u.user_metadata?.full_name || u.email?.split('@')[0] || 'User';
-                  const rc = roleColor(u.user_metadata?.role || 'customer');
-                  const sc = statusColor(u.email_confirmed_at);
+                {paged.map(u => {
+                  const name = u.full_name || u.email?.split('@')[0] || 'User';
+                  const cfg  = rc(u.role || 'customer');
                   return (
-                    <tr key={u.id}>
+                    <tr key={u.id} style={{ opacity: u.banned ? 0.6 : 1 }}>
                       <td>
-                        <div className="au-user-cell">
+                        <div className="au-user">
                           <div className="au-avatar">{initials(name, u.email)}</div>
-                          <div className="au-user-cell__info">
-                            <p>{name}</p>
-                            <span>{u.email}</span>
+                          <div>
+                            <p className="au-user-name">{name}{u.banned&&<span style={{marginLeft:6,fontSize:10,background:'rgba(220,38,38,0.1)',color:'#DC2626',padding:'1px 6px',borderRadius:10}}>Banned</span>}</p>
+                            <p className="au-user-email">{u.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td><Badge {...rc}/></td>
-                      <td><Badge {...sc}/></td>
-                      <td style={{ color:'#888', fontSize:12 }}>{fmtDate(u.created_at)}</td>
-                      <td style={{ color:'#888', fontSize:12 }}>{fmtDate(u.last_sign_in_at)}</td>
                       <td>
-                        <div className="au-action-wrap" onClick={e => e.stopPropagation()}>
-                          <button className="au-action-btn" onClick={() => setActionMenu(actionMenu === u.id ? null : u.id)}>
-                            <MoreVertical size={15}/>
-                          </button>
-                          {actionMenu === u.id && (
-                            <div className="au-action-menu">
-                              <button onClick={() => { setSelectedUser(u); setActionMenu(null); }}>
-                                <Eye size={14}/> View Details
-                              </button>
-                              <button onClick={() => { setSelectedUser(u); setActionMenu(null); }}>
-                                <Edit3 size={14}/> Edit User
-                              </button>
-                              <hr className="au-action-menu__divider"/>
-                              {(u.user_metadata?.role || 'customer') !== 'driver' && (
-                                <button onClick={() => handleRoleChange(u.id, u.user_metadata, 'driver')}>
-                                  <UserCheck size={14}/> Make Driver
-                                </button>
-                              )}
-                              {(u.user_metadata?.role || 'customer') !== 'admin' && (
-                                <button onClick={() => handleRoleChange(u.id, u.user_metadata, 'admin')}>
-                                  <Shield size={14}/> Make Admin
-                                </button>
-                              )}
-                              {(u.user_metadata?.role || 'customer') !== 'customer' && (
-                                <button onClick={() => handleRoleChange(u.id, u.user_metadata, 'customer')}>
-                                  <ShieldOff size={14}/> Set as Customer
-                                </button>
-                              )}
-                              <hr className="au-action-menu__divider"/>
-                              <button onClick={() => handleBanUser(u.id, u.banned_until)} className={u.banned_until ? '' : ''}>
-                                {u.banned_until ? <Unlock size={14}/> : <Ban size={14}/>}
-                                {u.banned_until ? 'Unban User' : 'Ban User'}
-                              </button>
-                              <button className="danger" onClick={() => handleDeleteUser(u.id)}>
-                                <Trash2 size={14}/> Delete User
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 10px',borderRadius:20,fontSize:11,fontWeight:600,background:cfg.bg,color:cfg.color}}>
+                          {cfg.label}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 10px',borderRadius:20,fontSize:11,fontWeight:600,
+                          background: u.email_verified?'rgba(34,197,94,0.1)':'rgba(234,179,8,0.1)',
+                          color:      u.email_verified?'#16A34A':'#CA8A04'}}>
+                          {u.email_verified?'Verified':'Unverified'}
+                        </span>
+                      </td>
+                      <td style={{color:'#888',fontSize:12}}>{fmt(u.created_at)}</td>
+                      <td style={{color:'#888',fontSize:12}}>{fmt(u.last_sign_in)}</td>
+                      <td>
+                        <ActionMenu
+                          user={u}
+                          onView={()=>setSelected(u)}
+                          onRoleChange={r=>updateRole(u.id,r)}
+                          onToggleBan={()=>toggleBan(u.id,u.banned)}
+                          onDelete={()=>deleteUser(u.id)}
+                        />
                       </td>
                     </tr>
                   );
@@ -556,16 +599,15 @@ export default function AdminUsers() {
             </table>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="au-pagination">
-                <span>Showing {(page-1)*PER_PAGE+1}–{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length}</span>
-                <div className="au-pagination__pages">
-                  <button className="au-pagination__btn" onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}>←</button>
-                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                    const p = i + 1;
-                    return <button key={p} className={`au-pagination__btn ${page===p?'au-pagination__btn--active':''}`} onClick={() => setPage(p)}>{p}</button>;
-                  })}
-                  <button className="au-pagination__btn" onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}>→</button>
+            {pages > 1 && (
+              <div className="au-pag">
+                <span>Showing {(page-1)*PER+1}–{Math.min(page*PER,filtered.length)} of {filtered.length}</span>
+                <div className="au-pag-btns">
+                  <button className="au-pag-btn" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}>←</button>
+                  {Array.from({length:Math.min(pages,7)},(_,i)=>i+1).map(p=>(
+                    <button key={p} className={`au-pag-btn ${page===p?'active':''}`} onClick={()=>setPage(p)}>{p}</button>
+                  ))}
+                  <button className="au-pag-btn" onClick={()=>setPage(p=>Math.min(pages,p+1))} disabled={page===pages}>→</button>
                 </div>
               </div>
             )}
@@ -573,9 +615,35 @@ export default function AdminUsers() {
         )}
       </div>
 
-      {/* User detail modal */}
-      {selectedUser && (
-        <UserModal user={selectedUser} onClose={() => setSelectedUser(null)} onUpdate={fetchUsers}/>
+      {/* Modal */}
+      {selected && <UserModal user={selected} onClose={()=>setSelected(null)} onSaved={fetchUsers}/>}
+    </div>
+  );
+}
+
+/* ─── Action dropdown menu ─── */
+function ActionMenu({ user: u, onView, onRoleChange, onToggleBan, onDelete }) {
+  const [open, setOpen] = useState(false);
+  useEffect(()=>{
+    const h = ()=>setOpen(false);
+    document.addEventListener('click',h);
+    return ()=>document.removeEventListener('click',h);
+  },[]);
+  return (
+    <div className="au-action-wrap" onClick={e=>e.stopPropagation()}>
+      <button className="au-action-btn" onClick={()=>setOpen(o=>!o)}><MoreVertical size={15}/></button>
+      {open && (
+        <div className="au-action-menu">
+          <button onClick={()=>{onView();setOpen(false)}}><Eye size={14}/> View Details</button>
+          <button onClick={()=>{onView();setOpen(false)}}><Edit3 size={14}/> Edit User</button>
+          <hr/>
+          {(u.role||'customer')!=='customer'&&<button onClick={()=>{onRoleChange('customer');setOpen(false)}}><ShieldOff size={14}/> Set as Customer</button>}
+          {(u.role||'customer')!=='driver'  &&<button onClick={()=>{onRoleChange('driver');setOpen(false)}}><UserCheck size={14}/> Make Driver</button>}
+          {(u.role||'customer')!=='admin'   &&<button onClick={()=>{onRoleChange('admin');setOpen(false)}}><Shield size={14}/> Make Admin</button>}
+          <hr/>
+          <button onClick={()=>{onToggleBan();setOpen(false)}}>{u.banned?<><UserX size={14}/> Unban User</>:<><Ban size={14}/> Ban User</>}</button>
+          <button className="danger" onClick={()=>{onDelete();setOpen(false)}}><Trash2 size={14}/> Delete</button>
+        </div>
       )}
     </div>
   );

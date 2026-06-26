@@ -117,3 +117,55 @@
   width: auto;
   object-fit: contain;
 }
+
+/* ── Footer social hover glow ── */
+.footer__social {
+  transition: transform 0.28s cubic-bezier(0.34,1.4,0.64,1),
+              background 0.22s,
+              color 0.22s,
+              box-shadow 0.22s;
+}
+.footer__social:hover {
+  transform: translateY(-4px) scale(1.12);
+  box-shadow: 0 6px 18px rgba(194,122,42,0.25);
+}
+
+/* ── Footer links — smooth underline ── */
+.footer__col ul li a {
+  position: relative;
+  transition: color 0.2s;
+  display: inline-block;
+}
+.footer__col ul li a::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0;
+  width: 0; height: 1px;
+  background: var(--amber-light);
+  transition: width 0.25s ease;
+}
+.footer__col ul li a:hover { color: var(--amber-light); }
+.footer__col ul li a:hover::after { width: 100%; }
+
+/* ── Contact links ── */
+.footer__contact a {
+  transition: color 0.2s;
+}
+.footer__contact a:hover { color: var(--amber-light); }
+
+/* ── Mobile: stack columns ── */
+@media (max-width: 600px) {
+  .footer__grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .footer__top  { padding: 48px 0 32px !important; }
+}
+
+/* ── Footer: glass ── */
+.footer {
+  background: rgba(22,17,10,0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1px solid rgba(232,168,74,0.12) !important;
+}
+[data-theme="light"] .footer {
+  background: rgba(30,22,12,0.92) !important;
+}

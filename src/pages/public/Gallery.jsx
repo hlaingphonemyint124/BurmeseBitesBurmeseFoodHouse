@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { getGalleryImages } from '../../lib/supabase';
 import './Gallery.css';
@@ -17,11 +17,28 @@ const FALLBACK_IMAGES = [
 
 const CATS = ['all', 'food', 'ambiance', 'events'];
 
+function SkeletonGallery() {
+  return (
+    <div className="gallery-masonry">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="gallery-item gallery-item--skeleton">
+          <div
+            className="skeleton-img"
+            style={{ height: [200, 280, 220, 260, 180, 300][i] + 'px', borderRadius: 12 }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Gallery() {
   const [images, setImages]     = useState([]);
   const [loading, setLoading]   = useState(true);
   const [filter, setFilter]     = useState('all');
   const [lightbox, setLightbox] = useState(null);
+  const touchStartX             = useRef(null);
+  const lightboxRef             = useRef(null);
 
   useEffect(() => {
     getGalleryImages().then(({ data }) => {
@@ -30,7 +47,6 @@ export default function Gallery() {
     });
   }, []);
 
-  // Compute filtered BEFORE using it in useEffect
   const filtered = images.filter(img => filter === 'all' || img.category === filter);
 
   const prev = useCallback(() => {
@@ -41,34 +57,62 @@ export default function Gallery() {
     setLightbox(l => (l + 1) % filtered.length);
   }, [filtered.length]);
 
+  /* Keyboard navigation — works reliably */
   useEffect(() => {
     if (lightbox === null) return;
     const handler = (e) => {
-      if (e.key === 'ArrowRight') next();
-      if (e.key === 'ArrowLeft')  prev();
-      if (e.key === 'Escape')     setLightbox(null);
+      if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(); }
+      if (e.key === 'Escape')     { setLightbox(null); }
     };
     window.addEventListener('keydown', handler);
+    // Focus lightbox for keyboard
+    lightboxRef.current?.focus();
     return () => window.removeEventListener('keydown', handler);
   }, [lightbox, next, prev]);
+
+  /* Lock scroll when lightbox open */
+  useEffect(() => {
+    if (lightbox !== null) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [lightbox]);
+
+  /* Touch/swipe handling */
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      diff > 0 ? next() : prev();
+    }
+    touchStartX.current = null;
+  };
 
   return (
     <div className="gallery-page">
       <div className="page-hero">
-        <div className="page-hero__bg" style={{ backgroundImage:`url(https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1400&q=80)` }} />
+        <div className="page-hero__bg" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1400&q=80)` }} />
         <div className="page-hero__overlay" />
         <div className="container page-hero__content">
-          <span className="section-label" style={{ color:'#E8A84A' }}>Visual Journey</span>
+          <span className="section-label" style={{ color: '#E8A84A' }}>Visual Journey</span>
           <h1 className="page-hero__title">Our Gallery</h1>
           <p className="page-hero__sub">A feast for the eyes — food, ambiance & moments</p>
         </div>
       </div>
 
       <div className="container gallery-page__body">
-        <div className="gallery-filters">
+        <div className="gallery-filters" role="tablist">
           {CATS.map(c => (
             <button
               key={c}
+              role="tab"
+              aria-selected={filter === c}
               className={`gallery-filter-btn ${filter === c ? 'gallery-filter-btn--active' : ''}`}
               onClick={() => { setFilter(c); setLightbox(null); }}
             >
@@ -78,10 +122,12 @@ export default function Gallery() {
         </div>
 
         {loading ? (
-          <div className="spinner" />
+          <SkeletonGallery />
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'60px 0', color:'var(--text-muted)', fontFamily:'var(--font-serif)', fontStyle:'italic' }}>
-            No images in this category yet.
+          <div className="menu-empty">
+            <div className="menu-empty__icon">📷</div>
+            <h3>No images yet</h3>
+            <p>No photos in this category yet — check back soon!</p>
           </div>
         ) : (
           <div className="gallery-masonry">
@@ -93,9 +139,13 @@ export default function Gallery() {
                 tabIndex={0}
                 onKeyDown={e => e.key === 'Enter' && setLightbox(idx)}
                 role="button"
-                aria-label={`View ${img.caption || 'image'}`}
+                aria-label={`View ${img.caption || 'image'} — ${idx + 1} of ${filtered.length}`}
               >
-                <img src={img.image_url} alt={img.caption || 'Gallery'} loading="lazy" />
+                <img
+                  src={img.image_url}
+                  alt={img.caption || 'Gallery image'}
+                  loading="lazy"
+                />
                 <div className="gallery-item__overlay">
                   <ZoomIn size={28} />
                   {img.caption && <p>{img.caption}</p>}
@@ -106,13 +156,45 @@ export default function Gallery() {
         )}
       </div>
 
+      {/* Lightbox */}
       {lightbox !== null && filtered[lightbox] && (
-        <div className="lightbox" onClick={() => setLightbox(null)}>
+        <div
+          className="lightbox"
+          style={{ zIndex: 9500 }}
+          onClick={() => setLightbox(null)}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image viewer"
+          ref={lightboxRef}
+          tabIndex={-1}
+        >
+          {/* Controls outside inner so fixed positioning works correctly */}
+          <button className="lightbox__close" onClick={(e) => { e.stopPropagation(); setLightbox(null); }} aria-label="Close">
+            <X size={22} />
+          </button>
+          <button
+            className="lightbox__prev"
+            onClick={(e) => { e.stopPropagation(); prev(); }}
+            aria-label="Previous image"
+          >
+            <ChevronLeft size={28} />
+          </button>
+          <button
+            className="lightbox__next"
+            onClick={(e) => { e.stopPropagation(); next(); }}
+            aria-label="Next image"
+          >
+            <ChevronRight size={28} />
+          </button>
           <div className="lightbox__inner" onClick={e => e.stopPropagation()}>
-            <button className="lightbox__close" onClick={() => setLightbox(null)}><X size={22} /></button>
-            <button className="lightbox__prev" onClick={prev}><ChevronLeft size={28} /></button>
-            <img src={filtered[lightbox].image_url} alt={filtered[lightbox].caption} className="lightbox__img" />
-            <button className="lightbox__next" onClick={next}><ChevronRight size={28} /></button>
+            <img
+              key={lightbox}
+              src={filtered[lightbox].image_url}
+              alt={filtered[lightbox].caption || 'Gallery image'}
+              className="lightbox__img"
+            />
             {filtered[lightbox].caption && (
               <div className="lightbox__caption">{filtered[lightbox].caption}</div>
             )}

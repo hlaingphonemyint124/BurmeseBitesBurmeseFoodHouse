@@ -25,6 +25,8 @@ const HERO_SLIDES = [
 
 const SLIDE_DURATION = 6000;
 
+const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 export default function HeroSection() {
   const [slide, setSlide]     = useState(0);
   const [animKey, setAnimKey] = useState(0);
@@ -61,7 +63,7 @@ export default function HeroSection() {
       {HERO_SLIDES.map((s, i) => (
         <div
           key={i}
-          className={`hero__slide ${i === slide ? 'hero__slide--active' : ''}`}
+          className={`hero__slide ${i === slide ? 'hero__slide--active' : ''} ${prefersReducedMotion ? 'hero__slide--no-motion' : ''}`}
           style={{ backgroundImage: `url(${s.bg})` }}
         />
       ))}

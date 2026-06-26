@@ -854,3 +854,50 @@
   0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
   100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
 }
+
+/* ── z-index fix: above animated canvas and navbar ── */
+.cart-overlay  { z-index: 9100 !important; }
+.cart-sidebar  { z-index: 9200 !important; }
+
+/* ── Mobile: full screen cart ── */
+@media (max-width: 480px) {
+  .cart-sidebar { width: 100% !important; border-radius: 0 !important; }
+  .cart-sidebar__header { padding: 16px 20px !important; }
+  .cart-items { padding: 12px 16px !important; }
+  .cart-footer { padding: 16px 20px !important; }
+}
+
+/* ── Step indicator dots ── */
+.cart-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.cart-step-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.25s;
+}
+.cart-step-dot--active {
+  background: var(--amber);
+  width: 20px;
+  border-radius: 4px;
+}
+.cart-step-dot--done { background: var(--jade); }
+[data-theme="dark"] .cart-steps { border-bottom-color: rgba(232,168,74,0.1); }
+
+/* ── CartSidebar: glass ── */
+.cart-sidebar {
+  background: rgba(255,252,247,0.92) !important;
+  backdrop-filter: blur(24px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.4) !important;
+  border-left: 1px solid rgba(194,122,42,0.15) !important;
+}
+[data-theme="dark"] .cart-sidebar {
+  background: rgba(18,13,7,0.92) !important;
+  border-left-color: rgba(232,168,74,0.1) !important;
+}

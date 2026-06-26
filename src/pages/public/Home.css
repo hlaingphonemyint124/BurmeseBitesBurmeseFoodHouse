@@ -242,6 +242,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
+  align-items: start; /* prevent stretching empty cells */
 }
 
 .dish-card { background: #fff; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); transition: var(--transition); }
@@ -484,4 +485,133 @@
   background: rgba(232,168,74,0.07);
   border-color: rgba(232,168,74,0.15);
   color: #A89880;
+}
+
+/* ── Reduced motion: disable Ken Burns ── */
+@media (prefers-reduced-motion: reduce) {
+  .hero__slide--no-motion { animation: none !important; }
+  .hero__slide { transition: opacity 0.3s ease !important; }
+  .hero__anim-1, .hero__anim-2, .hero__anim-3, .hero__anim-4 {
+    animation: none !important; opacity: 1 !important; transform: none !important;
+  }
+}
+
+/* ── Stats bar responsive ── */
+@media (max-width: 600px) {
+  .stats-bar__inner {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    padding: 0 !important;
+  }
+  .stats-bar__item {
+    padding: 20px 14px !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(0,0,0,0.07) !important;
+  }
+  [data-theme="dark"] .stats-bar__item {
+    border-bottom-color: rgba(255,255,255,0.06) !important;
+  }
+  .stats-bar__item:nth-child(odd)  { border-right: 1px solid rgba(0,0,0,0.07) !important; }
+  .stats-bar__item:nth-child(3),
+  .stats-bar__item:nth-child(4)   { border-bottom: none !important; }
+}
+
+/* ── Hero mobile ── */
+@media (max-width: 480px) {
+  .hero { min-height: 100svh; }
+  .hero__title { font-size: clamp(30px, 10vw, 52px) !important; }
+  .hero__sub   { font-size: 15px !important; margin-bottom: 28px !important; }
+  .hero__actions { flex-direction: column; width: 100%; gap: 10px !important; }
+  .hero__actions .btn { width: 100%; justify-content: center; }
+  .hero__dots { bottom: 56px; }
+  .hero__scroll-hint { right: 20px; bottom: 20px; }
+}
+
+/* ── Dish cards mobile ── */
+@media (max-width: 560px) {
+  .home__dishes { grid-template-columns: 1fr !important; }
+  .home__reviews { grid-template-columns: 1fr !important; }
+  .home__section-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+
+
+/* ── Fix gap between sections ── */
+.page-section, .page-section-alt {
+  padding: 72px 0;
+}
+@media (max-width: 768px) {
+  .page-section, .page-section-alt { padding: 52px 0; }
+}
+@media (max-width: 480px) {
+  .page-section, .page-section-alt { padding: 40px 0; }
+}
+
+/* ── Home section gap: keep tight ── */
+.home__section-head { margin-bottom: 32px; }
+
+/* ── Dish grid: never stretches to fill empty ── */
+.home__dishes {
+  align-content: start;
+}
+
+/* ── Glass card system — transparent for canvas visibility ── */
+.stats-bar { background: transparent !important; }
+.stats-bar__item {
+  background: rgba(255,252,247,0.55) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(194,122,42,0.12) !important;
+  border-radius: 12px;
+}
+[data-theme="dark"] .stats-bar__item {
+  background: rgba(18,14,8,0.55) !important;
+  border-color: rgba(232,168,74,0.1) !important;
+}
+.stats-bar__item:last-child { border-right: none !important; }
+
+/* stats-bar__inner on mobile: grid of glass cards */
+.stats-bar__inner {
+  display: flex;
+  gap: 12px;
+  padding: 24px 0;
+}
+@media (max-width: 768px) {
+  .stats-bar__inner {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 20px 0 !important;
+  }
+  .stats-bar__item {
+    border-right: none !important;
+    border-bottom: none !important;
+    border-radius: 12px !important;
+    padding: 18px 14px !important;
+  }
+}
+
+/* dish cards — glass */
+.dish-card {
+  background: rgba(255,252,247,0.62) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(194,122,42,0.12) !important;
+}
+[data-theme="dark"] .dish-card {
+  background: rgba(30,22,12,0.68) !important;
+  border-color: rgba(232,168,74,0.12) !important;
+}
+
+/* review cards — glass */
+.review-card {
+  background: rgba(255,252,247,0.62) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(194,122,42,0.1) !important;
+}
+[data-theme="dark"] .review-card {
+  background: rgba(30,22,12,0.65) !important;
+  border-color: rgba(232,168,74,0.1) !important;
 }

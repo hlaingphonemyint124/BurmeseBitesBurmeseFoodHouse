@@ -195,3 +195,45 @@
   .about-timeline__dot { order: -1; margin-left: 0; }
   .about-cta__inner { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── About page mobile fixes ── */
+@media (max-width: 900px) {
+  .about-founder { grid-template-columns: 1fr !important; }
+  .about-founder__img { height: 300px !important; }
+  .about-values { grid-template-columns: repeat(2,1fr) !important; }
+  .about-team   { grid-template-columns: repeat(2,1fr) !important; }
+}
+@media (max-width: 560px) {
+  .about-values { grid-template-columns: 1fr !important; }
+  .about-team   { grid-template-columns: 1fr !important; }
+  .about-founder__img { height: 240px !important; }
+  .about-cta__inner   { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+  .about-cta__inner h2 { font-size: clamp(22px, 5vw, 36px) !important; }
+}
+
+/* ── Animated background: page is transparent ── */
+.menu-page,
+.gallery-page,
+.reviews-page,
+.reservation-page,
+.about-page {
+  background: transparent !important;
+}
+
+/* ── About page cards: glass ── */
+.about-value-card,
+.about-team-card,
+.about-timeline-item,
+.about-founder__content {
+  background: rgba(255,252,247,0.62) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(194,122,42,0.1) !important;
+}
+[data-theme="dark"] .about-value-card,
+[data-theme="dark"] .about-team-card,
+[data-theme="dark"] .about-timeline-item,
+[data-theme="dark"] .about-founder__content {
+  background: rgba(30,22,12,0.65) !important;
+  border-color: rgba(232,168,74,0.1) !important;
+}

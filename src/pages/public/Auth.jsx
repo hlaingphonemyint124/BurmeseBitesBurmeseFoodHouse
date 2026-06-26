@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { signIn, signUp } from '../../lib/supabase';
+import { useCart } from '../../lib/CartContext';
 import './Auth.css';
 
 const BENEFITS = [
@@ -24,6 +25,7 @@ export default function Auth() {
     fullName: '', email: '', phone: '', password: '', confirm: '', agreeTerms: false
   });
   const navigate = useNavigate();
+  const { dispatch: cartDispatch, cart } = useCart();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   // ── Password strength ────────────────────────────────────────────────────
@@ -66,6 +68,10 @@ export default function Auth() {
       toast.success(`Welcome, ${u.user_metadata?.full_name || 'Driver'}!`);
       navigate('/driver');
     } else {
+      // Merge any guest cart items
+      if (cart.items.length > 0) {
+        cartDispatch({ type: 'MERGE_ITEMS', items: cart.items });
+      }
       toast.success('Welcome back!');
       navigate('/');
     }

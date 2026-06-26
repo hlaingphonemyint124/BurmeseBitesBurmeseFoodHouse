@@ -130,3 +130,54 @@
   font-weight: 600;
   text-decoration: underline;
 }
+
+/* ── Time slots: clamp on small phones ── */
+@media (max-width: 400px) {
+  .time-slots {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+  .time-slot {
+    font-size: 11px !important;
+    padding: 7px 4px !important;
+  }
+}
+@media (max-width: 320px) {
+  .time-slots { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ── Reservation layout stack on tablet ── */
+@media (max-width: 900px) {
+  .reservation-layout { grid-template-columns: 1fr !important; }
+}
+
+/* ── Mobile form padding ── */
+@media (max-width: 480px) {
+  .reservation-form { padding: 16px !important; gap: 14px !important; }
+  .reservation-form-card__header { padding: 16px !important; }
+  .reservation-form__row { flex-direction: column !important; }
+  .reservation-page__body { padding: 24px 0 60px !important; }
+}
+
+/* ── Animated background: page is transparent ── */
+.menu-page,
+.gallery-page,
+.reviews-page,
+.reservation-page,
+.about-page {
+  background: transparent !important;
+}
+
+/* ── Reservation form: glass ── */
+.reservation-form-card,
+.reservation-summary-card {
+  background: rgba(255,252,247,0.62) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(194,122,42,0.12) !important;
+}
+[data-theme="dark"] .reservation-form-card,
+[data-theme="dark"] .reservation-summary-card {
+  background: rgba(30,22,12,0.68) !important;
+  border-color: rgba(232,168,74,0.12) !important;
+}

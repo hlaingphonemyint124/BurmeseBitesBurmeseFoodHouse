@@ -43,6 +43,7 @@ export default function Navbar({ onCartOpen }) {
   const { user, isAdmin, isDriver } = useAuth();
   const { toggle: toggleTheme, isDark } = useTheme();
   const [scrolled, setScrolled]   = useState(false);
+  const [shrunk,  setShrunk]    = useState(false);
   const [sideNav, setSideNav]     = useState(false);
   const [profileOpen, setProfile] = useState(false);
   const { pathname }              = useLocation();
@@ -51,7 +52,10 @@ export default function Navbar({ onCartOpen }) {
 
   /* Scroll listener */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40);
+      setShrunk(window.scrollY > 120);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -113,7 +117,7 @@ export default function Navbar({ onCartOpen }) {
 
   return (
     <>
-      <nav className={`navbar ${scrolled || !isHome ? 'navbar--solid' : ''}`}>
+      <nav className={`navbar ${scrolled || !isHome ? 'navbar--solid' : ''} ${shrunk ? 'navbar--shrunk' : ''}`}>
         <div className="navbar__inner">
 
           {/* Logo */}

@@ -142,7 +142,7 @@ export default function FeaturedDishesSection() {
               <div
                 key={dish._feat_id || dish.id}
                 className="dish-card reveal-item"
-                style={{ animationDelay:`${idx * 80}ms` }}
+                style={{ animationDelay:`${idx * 100}ms`, transitionDelay:`${idx * 100}ms` }}
               >
                 {/* Image */}
                 <div className="dish-card__img-wrap">

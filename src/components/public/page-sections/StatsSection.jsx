@@ -54,7 +54,7 @@ export default function StatsSection() {
       <div className="container stats-bar__inner">
         {STATS.map(({ icon, label, value, suffix, decimals, divisor }, i) => (
           <StatItem key={label} icon={icon} label={label} value={value} suffix={suffix}
-            decimals={decimals} divisor={divisor} delay={i * 120} active={active} />
+            decimals={decimals} divisor={divisor} delay={i * 140} active={active} />
         ))}
       </div>
     </div>
