@@ -1,39 +1,7 @@
-/* Page hero shared style */
-.page-hero {
-  position: relative;
-  height: 340px;
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 48px;
-  margin-top: var(--nav-h);
-  overflow: hidden;
-}
-.page-hero__bg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-}
-.page-hero__overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(30,26,20,0.85) 0%, rgba(30,26,20,0.3) 100%);
-}
-.page-hero__content { position: relative; z-index: 1; color: #fff; }
-.page-hero__title {
-  font-family: var(--font-display);
-  font-size: clamp(32px, 5vw, 56px);
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.1;
-  margin-bottom: 10px;
-}
-.page-hero__sub {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 17px;
-  color: rgba(255,255,255,0.78);
-}
+/* Page hero shared style now lives in index.css (global, always-loaded) —
+   moved from here because with route-based code-splitting, Menu.css only
+   loads once someone visits /menu, which left Gallery/Reservation/Reviews
+   completely unstyled if that was a visitor's very first page. */
 
 /* Menu body */
 .menu-page__body { padding: 40px 0 64px; }

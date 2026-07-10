@@ -384,7 +384,7 @@ export default function AdminFeaturedDishes() {
                     <td>
                       <div className="afd-dish">
                         {getThumb(row)
-                          ? <img src={getThumb(row)} alt={getName(row)} className="afd-thumb"/>
+                          ? <img src={getThumb(row)} alt={getName(row)} className="afd-thumb" loading="lazy"/>
                           : <div className="afd-thumb-ph"><ImageIcon size={18}/></div>
                         }
                         <div>

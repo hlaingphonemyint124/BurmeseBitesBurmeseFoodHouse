@@ -31,7 +31,7 @@ function SkeletonGallery() {
 }
 
 export default function Gallery() {
-  const { photos: headerPhotos } = useSitePhotos('gallery_header');
+  const { photos: headerPhotos, loading: headerLoading } = useSitePhotos('gallery_header');
   const { photos: foodPhotos,     loading: lFood }     = useSitePhotos('gallery_food');
   const { photos: ambiancePhotos, loading: lAmbiance } = useSitePhotos('gallery_ambiance');
   const { photos: eventPhotos,    loading: lEvents }   = useSitePhotos('gallery_events');
@@ -101,7 +101,10 @@ export default function Gallery() {
   return (
     <div className="gallery-page">
       <div className="page-hero">
-        <div className="page-hero__bg" style={{ backgroundImage: `url(${headerBg})` }} />
+        <div
+          className={`page-hero__bg ${headerLoading ? 'page-hero__bg--loading' : ''}`}
+          style={headerLoading ? undefined : { backgroundImage: `url(${headerBg})` }}
+        />
         <div className="page-hero__overlay" />
         <div className="container page-hero__content">
           <span className="section-label" style={{ color:'#E8A84A' }}>Visual Journey</span>

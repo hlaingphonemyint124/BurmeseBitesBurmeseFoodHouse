@@ -30,7 +30,13 @@ const prefersReducedMotion =
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export default function HeroSection() {
-  const [slides,   setSlides]   = useState(FALLBACK_SLIDES);
+  // Start EMPTY, not pre-filled with fallback stock photos. Previously this
+  // rendered FALLBACK_SLIDES immediately on every mount (i.e. every time you
+  // navigated back to Home) and only swapped to your real photos once the
+  // Supabase fetch resolved a moment later — a visible flash of old/wrong
+  // photos on every navigation. Now we wait for the DB answer first.
+  const [slides,   setSlides]   = useState([]);
+  const [loading,  setLoading]  = useState(true);
   const [slide,    setSlide]    = useState(0);
   const [animKey,  setAnimKey]  = useState(0);
   const [progress, setProgress] = useState(0);
@@ -39,6 +45,7 @@ export default function HeroSection() {
 
   // Load hero slides from site_photos table
   useEffect(() => {
+    let cancelled = false;
     supabase
       .from('site_photos')
       .select('*')
@@ -46,16 +53,21 @@ export default function HeroSection() {
       .eq('active', true)
       .order('sort_order', { ascending: true })
       .then(({ data }) => {
-        if (data && data.length > 0) {
-          setSlides(data.map(row => ({
-            bg:    row.image_url,
-            tag:   row.tag    || '',
-            title: row.title  || '',
-            sub:   row.subtitle || row.caption || '',
-          })));
-          setSlide(0);
-        }
+        if (cancelled) return;
+        setSlides(data && data.length > 0
+          ? data.map(row => ({
+              bg:    row.image_url,
+              tag:   row.tag    || '',
+              title: row.title  || '',
+              sub:   row.subtitle || row.caption || '',
+            }))
+          // Only fall back to the stock photos once we've genuinely
+          // confirmed there's nothing configured in the database yet.
+          : FALLBACK_SLIDES);
+        setSlide(0);
+        setLoading(false);
       });
+    return () => { cancelled = true; };
   }, []);
 
   const goTo = (idx) => {
@@ -68,6 +80,7 @@ export default function HeroSection() {
   const prev = () => goTo((slide - 1 + slides.length) % slides.length);
 
   useEffect(() => {
+    if (slides.length === 0) return; // nothing to auto-advance yet while loading
     startRef.current = performance.now();
     const tick = (now) => {
       const p = Math.min(((now - startRef.current) / SLIDE_DURATION) * 100, 100);
@@ -78,6 +91,16 @@ export default function HeroSection() {
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
   }, [slide, slides.length]);
+
+  // Branded skeleton instead of a flash of stock/placeholder photos while
+  // we wait to hear back from the database.
+  if (loading || slides.length === 0) {
+    return (
+      <section className="hero hero--skeleton" aria-busy="true" aria-label="Loading">
+        <div className="hero__skeleton-shimmer" />
+      </section>
+    );
+  }
 
   return (
     <section className="hero">

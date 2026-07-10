@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -10,16 +10,24 @@ import { usePageTransition }        from './lib/usePageTransition';
 import Navbar                       from './components/layout/Navbar';
 import Footer                       from './components/layout/Footer';
 import CartSidebar                  from './components/shared/CartSidebar';
+import PageLoader                   from './components/shared/PageLoader';
 
-import Home          from './pages/public/Home';
-import Menu          from './pages/public/Menu';
-import Gallery       from './pages/public/Gallery';
-import Reservation   from './pages/public/Reservation';
-import Reviews       from './pages/public/Reviews';
-import Auth          from './pages/public/Auth';
-import Profile       from './pages/public/Profile';
-import Admin         from './pages/admin/Admin';
-import DriverDashboard from './pages/driver/DriverDashboard';
+// Home loads eagerly — it's the most common landing page, so there's no
+// benefit to a lazy chunk + loading flash for the first thing most visitors see.
+import Home from './pages/public/Home';
+
+// Everything else is code-split: each page only downloads its own JS when
+// the visitor actually navigates there, instead of every visitor paying for
+// the full Admin panel + Driver dashboard + Auth + Profile bundle up front.
+const Menu            = React.lazy(() => import('./pages/public/Menu'));
+const Gallery         = React.lazy(() => import('./pages/public/Gallery'));
+const Reservation     = React.lazy(() => import('./pages/public/Reservation'));
+const Reviews         = React.lazy(() => import('./pages/public/Reviews'));
+const Auth            = React.lazy(() => import('./pages/public/Auth'));
+const Profile         = React.lazy(() => import('./pages/public/Profile'));
+const Admin           = React.lazy(() => import('./pages/admin/Admin'));
+const DriverDashboard = React.lazy(() => import('./pages/driver/DriverDashboard'));
+
 import AnimatedBackground from './components/layout/AnimatedBackground';
 
 /* ── Themed toaster ── */
@@ -61,11 +69,11 @@ function AnimatedRoutes() {
     >
       <Routes location={displayLocation}>
         <Route path="/"           element={<DriverGuard><Home /></DriverGuard>} />
-        <Route path="/menu"       element={<DriverGuard><Menu /></DriverGuard>} />
-        <Route path="/gallery"    element={<DriverGuard><Gallery /></DriverGuard>} />
-        <Route path="/reservation" element={<DriverGuard><Reservation /></DriverGuard>} />
-        <Route path="/reviews"    element={<DriverGuard><Reviews /></DriverGuard>} />
-        <Route path="/profile/*"  element={<DriverGuard><Profile /></DriverGuard>} />
+        <Route path="/menu"       element={<DriverGuard><Suspense fallback={<PageLoader />}><Menu /></Suspense></DriverGuard>} />
+        <Route path="/gallery"    element={<DriverGuard><Suspense fallback={<PageLoader />}><Gallery /></Suspense></DriverGuard>} />
+        <Route path="/reservation" element={<DriverGuard><Suspense fallback={<PageLoader />}><Reservation /></Suspense></DriverGuard>} />
+        <Route path="/reviews"    element={<DriverGuard><Suspense fallback={<PageLoader />}><Reviews /></Suspense></DriverGuard>} />
+        <Route path="/profile/*"  element={<DriverGuard><Suspense fallback={<PageLoader />}><Profile /></Suspense></DriverGuard>} />
         <Route path="*" element={
           <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, textAlign: 'center', padding: '40px 24px' }}>
             <div style={{ fontSize: 52 }}>🍜</div>
@@ -104,9 +112,9 @@ export default function App() {
           <Router>
             <AnimatedBackground />
             <Routes>
-              <Route path="/auth"    element={<Auth />} />
-              <Route path="/admin/*" element={<Admin />} />
-              <Route path="/driver"  element={<DriverDashboard />} />
+              <Route path="/auth"    element={<Suspense fallback={<PageLoader />}><Auth /></Suspense>} />
+              <Route path="/admin/*" element={<Suspense fallback={<PageLoader />}><Admin /></Suspense>} />
+              <Route path="/driver"  element={<Suspense fallback={<PageLoader />}><DriverDashboard /></Suspense>} />
               <Route path="/*"       element={<PublicLayout />} />
             </Routes>
             <ThemedToaster />

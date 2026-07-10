@@ -2118,9 +2118,6 @@ textarea:focus-visible {
 /* ════════════════════════════════════════════════════════
    MICRO-INTERACTIONS & ACCESSIBILITY
 ════════════════════════════════════════════════════════ */
-/* Smooth scroll for all anchor navigation */
-html { scroll-behavior: smooth; }
-
 /* Skip link for accessibility */
 .skip-to-content {
   position: fixed;
@@ -2136,6 +2133,94 @@ html { scroll-behavior: smooth; }
   transition: top 0.2s;
 }
 .skip-to-content:focus { top: 0; }
+
+/* Branded Suspense fallback shown briefly while a lazy route chunk loads */
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  width: 100%;
+}
+.page-loader__ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(194,122,42,0.18);
+  border-top-color: var(--amber);
+  animation: page-loader-spin 0.7s linear infinite;
+}
+[data-theme="dark"] .page-loader__ring {
+  border-color: rgba(232,168,74,0.15);
+  border-top-color: var(--amber-light);
+}
+@keyframes page-loader-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .page-loader__ring { animation-duration: 1.4s; }
+}
+
+/* ════════════════════════════════════════════════════════
+   PAGE HERO — shared banner used by Menu / Gallery / Reservation /
+   Reviews. Lives here (global, always-loaded) rather than in any one
+   page's own CSS file, since with route-based code-splitting a page's
+   own CSS only loads once you actually visit that route — these banners
+   need to look right even if a page is someone's very first stop.
+════════════════════════════════════════════════════════ */
+.page-hero {
+  position: relative;
+  height: 340px;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 48px;
+  margin-top: var(--nav-h);
+  overflow: hidden;
+  background: #2C1A08; /* warm dark fallback while the bg image loads */
+}
+.page-hero__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+/* Shown while we're still checking the database for an admin-set photo —
+   avoids flashing a stock placeholder photo first on every page visit. */
+.page-hero__bg--loading {
+  background: linear-gradient(
+    100deg,
+    rgba(255,255,255,0.03) 30%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.03) 70%
+  );
+  background-size: 200% 100%;
+  animation: hero-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes hero-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.page-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(30,26,20,0.85) 0%, rgba(30,26,20,0.3) 100%);
+}
+.page-hero__content { position: relative; z-index: 1; color: #fff; }
+.page-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+.page-hero__sub {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 17px;
+  color: rgba(255,255,255,0.78);
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-hero__bg--loading { animation: none; opacity: 0.6; }
+}
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {

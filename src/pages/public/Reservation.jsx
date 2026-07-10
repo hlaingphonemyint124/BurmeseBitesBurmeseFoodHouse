@@ -15,7 +15,7 @@ const TIME_SLOTS = [
 const PARTY_SIZES = [1,2,3,4,5,6,7,8];
 
 export default function Reservation() {
-  const { photos: headerPhotos } = useSitePhotos('reservation_header');
+  const { photos: headerPhotos, loading: headerLoading } = useSitePhotos('reservation_header');
   const [form, setForm] = useState({
     name:'', email:'', phone:'',
     date:'', time:'', party_size:2, special_notes:'',
@@ -59,7 +59,10 @@ export default function Reservation() {
     <div className="reservation-page">
       {/* Hero */}
       <div className="page-hero">
-        <div className="page-hero__bg" style={{ backgroundImage: `url(${headerPhotos[0]?.image_url || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1400&q=80'})` }} />
+        <div
+          className={`page-hero__bg ${headerLoading ? 'page-hero__bg--loading' : ''}`}
+          style={headerLoading ? undefined : { backgroundImage: `url(${headerPhotos[0]?.image_url || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1400&q=80'})` }}
+        />
         <div className="page-hero__overlay" />
         <div className="container page-hero__content">
           <span className="section-label" style={{ color: '#E8A84A' }}>Dining Experience</span>
@@ -129,6 +132,7 @@ export default function Reservation() {
                 <img
                   src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=700&q=80"
                   alt="Restaurant interior"
+                  loading="lazy"
                 />
               </div>
             </div>

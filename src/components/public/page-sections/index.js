@@ -1,7 +1,6 @@
 // Home sections
 export { default as HeroSection }          from './HeroSection';
 export { default as StatsSection }         from './StatsSection';
-export { default as StorySection }         from './StorySection';
 export { default as FeaturedDishesSection } from './FeaturedDishesSection';
 export { default as ReviewsPreviewSection } from './ReviewsPreviewSection';
 export { default as CTABannerSection }     from './CTABannerSection';

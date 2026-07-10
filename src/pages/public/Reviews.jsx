@@ -35,7 +35,7 @@ function StarRating({ value, onChange, size = 28 }) {
 }
 
 export default function Reviews() {
-  const { photos: headerPhotos } = useSitePhotos('reviews_header');
+  const { photos: headerPhotos, loading: headerLoading } = useSitePhotos('reviews_header');
   const [reviews, setReviews]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [submitted, setSubmitted] = useState(false);
@@ -91,7 +91,10 @@ export default function Reviews() {
     <div className="reviews-page">
       {/* Hero */}
       <div className="page-hero">
-        <div className="page-hero__bg" style={{ backgroundImage:`url(https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1400&q=80)` }} />
+        <div
+          className={`page-hero__bg ${headerLoading ? 'page-hero__bg--loading' : ''}`}
+          style={headerLoading ? undefined : { backgroundImage: `url(${headerPhotos[0]?.image_url || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1400&q=80'})` }}
+        />
         <div className="page-hero__overlay" />
         <div className="container page-hero__content">
           <span className="section-label" style={{ color:'#E8A84A' }}>Guest Voices</span>
