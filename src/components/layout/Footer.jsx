@@ -32,7 +32,6 @@ export default function Footer() {
                 ['/menu', 'Our Menu'],
                 ['/gallery', 'Gallery'],
                 ['/reservation', 'Book a Table'],
-                ['/about', 'Our Story'],
                 ['/reviews', 'Reviews'],
               ].map(([to, label]) => (
                 <li key={to}><Link to={to}>{label}</Link></li>

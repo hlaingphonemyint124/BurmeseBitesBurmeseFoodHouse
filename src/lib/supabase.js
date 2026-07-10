@@ -176,3 +176,27 @@ export const reorderFeaturedDishes = async (updates) =>
   Promise.all(updates.map(({ id, sort_order }) =>
     supabase.from('featured_dishes').update({ sort_order }).eq('id', id)
   ));
+
+// ─── Site Photos (admin-controlled photos across all pages) ───────────────────
+export const getSitePhotos = async (section) =>
+  supabase
+    .from('site_photos')
+    .select('*')
+    .eq('logical_section', section)
+    .eq('active', true)
+    .order('sort_order', { ascending: true });
+
+export const getAllSitePhotos = async () =>
+  supabase
+    .from('site_photos')
+    .select('*')
+    .order('logical_section, sort_order');
+
+export const createSitePhoto = async (photo) =>
+  supabase.from('site_photos').insert([photo]).select();
+
+export const updateSitePhoto = async (id, updates) =>
+  supabase.from('site_photos').update(updates).eq('id', id).select();
+
+export const deleteSitePhoto = async (id) =>
+  supabase.from('site_photos').delete().eq('id', id);

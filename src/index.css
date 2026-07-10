@@ -2696,26 +2696,6 @@ body {
 [data-theme="dark"] .skeleton-card { background: var(--surface-1); border-color: rgba(232,168,74,0.1); }
 
 /* ════════════════════════════════════════════════════════
-   STATS BAR — mobile responsive fix
-════════════════════════════════════════════════════════ */
-@media (max-width: 600px) {
-  .stats-bar__inner {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-  }
-  .stats-bar__item {
-    border-right: none !important;
-    border-bottom: 1px solid rgba(0,0,0,0.07);
-    padding: 20px 16px;
-  }
-  [data-theme="dark"] .stats-bar__item { border-bottom-color: rgba(255,255,255,0.07); }
-  .stats-bar__item:nth-child(odd) { border-right: 1px solid rgba(0,0,0,0.07) !important; }
-  [data-theme="dark"] .stats-bar__item:nth-child(odd) { border-right-color: rgba(255,255,255,0.07) !important; }
-  .stats-bar__item:nth-child(3),
-  .stats-bar__item:nth-child(4) { border-bottom: none; }
-}
-
-/* ════════════════════════════════════════════════════════
    HERO — mobile fluid text
 ════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
@@ -2895,15 +2875,9 @@ body { background: transparent !important; }
   -webkit-backdrop-filter: none !important;
 }
 
-/* Stats bar — transparent with soft glass border */
+/* Stats bar — background handled by the consolidated rules in Home.css */
 .stats-bar {
   background: transparent !important;
-  border-top: 1px solid rgba(194,122,42,0.08) !important;
-  border-bottom: 1px solid rgba(194,122,42,0.08) !important;
-}
-[data-theme="dark"] .stats-bar {
-  border-top-color: rgba(232,168,74,0.07) !important;
-  border-bottom-color: rgba(232,168,74,0.07) !important;
 }
 
 /* Cards keep their glass treatment — not transparent */

@@ -1,38 +1,62 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 
-const HERO_SLIDES = [
+const FALLBACK_SLIDES = [
   {
-    bg: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=1600&q=80',
-    tag: 'Signature Dish',
+    bg:    'https://images.unsplash.com/photo-1547592180-85f173990554?w=1600&q=80',
+    tag:   'Signature Dish',
     title: 'Ohn No Khao Swe',
-    sub: "Burma's iconic coconut chicken noodle soup",
+    sub:   "Burma's iconic coconut chicken noodle soup",
   },
   {
-    bg: 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=1600&q=80',
-    tag: 'Fresh Daily',
+    bg:    'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=1600&q=80',
+    tag:   'Fresh Daily',
     title: 'Laphet Thoke',
-    sub: 'The legendary Burmese tea leaf salad',
+    sub:   'The legendary Burmese tea leaf salad',
   },
   {
-    bg: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80',
-    tag: 'Fine Dining',
+    bg:    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80',
+    tag:   'Fine Dining',
     title: 'An Authentic Experience',
-    sub: 'Warm hospitality & soulful flavours from Yangon',
+    sub:   'Warm hospitality & soulful flavours from Yangon',
   },
 ];
 
 const SLIDE_DURATION = 6000;
-
-const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const prefersReducedMotion =
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export default function HeroSection() {
-  const [slide, setSlide]     = useState(0);
-  const [animKey, setAnimKey] = useState(0);
+  const [slides,   setSlides]   = useState(FALLBACK_SLIDES);
+  const [slide,    setSlide]    = useState(0);
+  const [animKey,  setAnimKey]  = useState(0);
   const [progress, setProgress] = useState(0);
   const startRef = useRef(performance.now());
   const rafRef   = useRef(null);
+
+  // Load hero slides from site_photos table
+  useEffect(() => {
+    supabase
+      .from('site_photos')
+      .select('*')
+      .eq('logical_section', 'hero')
+      .eq('active', true)
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSlides(data.map(row => ({
+            bg:    row.image_url,
+            tag:   row.tag    || '',
+            title: row.title  || '',
+            sub:   row.subtitle || row.caption || '',
+          })));
+          setSlide(0);
+        }
+      });
+  }, []);
 
   const goTo = (idx) => {
     setSlide(idx);
@@ -40,27 +64,24 @@ export default function HeroSection() {
     setProgress(0);
     startRef.current = performance.now();
   };
+  const next = () => goTo((slide + 1) % slides.length);
+  const prev = () => goTo((slide - 1 + slides.length) % slides.length);
 
-  const next = () => goTo((slide + 1) % HERO_SLIDES.length);
-  const prev = () => goTo((slide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
-
-  // Auto-advance + progress bar
   useEffect(() => {
     startRef.current = performance.now();
     const tick = (now) => {
       const p = Math.min(((now - startRef.current) / SLIDE_DURATION) * 100, 100);
       setProgress(p);
       if (p < 100) { rafRef.current = requestAnimationFrame(tick); }
-      else { goTo((slide + 1) % HERO_SLIDES.length); }
+      else { goTo((slide + 1) % slides.length); }
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [slide]);
+  }, [slide, slides.length]);
 
   return (
     <section className="hero">
-      {/* slides */}
-      {HERO_SLIDES.map((s, i) => (
+      {slides.map((s, i) => (
         <div
           key={i}
           className={`hero__slide ${i === slide ? 'hero__slide--active' : ''} ${prefersReducedMotion ? 'hero__slide--no-motion' : ''}`}
@@ -70,23 +91,20 @@ export default function HeroSection() {
 
       <div className="hero__overlay" />
 
-      {/* progress bar */}
       <div className="hero__progress-bar">
         <div className="hero__progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      {/* staggered content */}
       <div className="hero__content container" key={animKey}>
-        <span className="hero__tag hero__anim-1">{HERO_SLIDES[slide].tag}</span>
-        <h1 className="hero__title hero__anim-2">{HERO_SLIDES[slide].title}</h1>
-        <p className="hero__sub hero__anim-3">{HERO_SLIDES[slide].sub}</p>
+        {slides[slide].tag   && <span className="hero__tag   hero__anim-1">{slides[slide].tag}</span>}
+        {slides[slide].title && <h1   className="hero__title hero__anim-2">{slides[slide].title}</h1>}
+        {slides[slide].sub   && <p    className="hero__sub   hero__anim-3">{slides[slide].sub}</p>}
         <div className="hero__actions hero__anim-4">
-          <Link to="/menu" className="btn btn-primary">Explore Menu</Link>
+          <Link to="/menu"        className="btn btn-primary">Explore Menu</Link>
           <Link to="/reservation" className="btn hero__btn-ghost">Book a Table</Link>
         </div>
       </div>
 
-      {/* arrow nav */}
       <button className="hero__arrow hero__arrow--prev" onClick={prev} aria-label="Previous slide">
         <ChevronLeft size={22} />
       </button>
@@ -94,9 +112,8 @@ export default function HeroSection() {
         <ChevronRight size={22} />
       </button>
 
-      {/* dots */}
       <div className="hero__dots">
-        {HERO_SLIDES.map((_, i) => (
+        {slides.map((_, i) => (
           <button
             key={i}
             className={`hero__dot ${i === slide ? 'hero__dot--active' : ''}`}

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { getMenuItems } from '../../lib/supabase';
 import { useCart } from '../../lib/CartContext';
 import { useAuth } from '../../lib/AuthContext';
+import { useSitePhotos } from '../../lib/useSitePhotos';
 import './Menu.css';
 
 const CATEGORIES = [
@@ -65,6 +66,7 @@ export default function Menu() {
   const [search, setSearch]     = useState('');
   const [vegOnly, setVegOnly]   = useState(false);
   const { dispatch }            = useCart();
+  const { photos: headerPhotos } = useSitePhotos('menu_header');
   const { user }                = useAuth();
   const navigate                = useNavigate();
   const cartIconRef             = useRef(null);
@@ -119,7 +121,7 @@ export default function Menu() {
     <div className="menu-page">
       {/* Page header */}
       <div className="page-hero">
-        <div className="page-hero__bg" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1547592180-85f173990554?w=1400&q=80)` }} />
+        <div className="page-hero__bg" style={{ backgroundImage: `url(${headerPhotos[0]?.image_url || 'https://images.unsplash.com/photo-1547592180-85f173990554?w=1400&q=80'})` }} />
         <div className="page-hero__overlay" />
         <div className="container page-hero__content">
           <span className="section-label" style={{ color: '#E8A84A' }}>Explore</span>

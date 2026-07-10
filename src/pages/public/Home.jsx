@@ -2,7 +2,6 @@ import React from 'react';
 import {
   HeroSection,
   StatsSection,
-  StorySection,
   FeaturedDishesSection,
   ReviewsPreviewSection,
   CTABannerSection,
@@ -14,7 +13,6 @@ export default function Home() {
     <div className="home">
       <HeroSection />
       <StatsSection />
-      <StorySection />
       <FeaturedDishesSection />
       <ReviewsPreviewSection />
       <CTABannerSection />

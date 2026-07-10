@@ -3,7 +3,7 @@ import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, UtensilsCrossed, CalendarDays,
   Star, Images, LogOut, Menu, X, ChevronRight, ShoppingCart,
-  Settings, Sun, Moon, Bike, Users, Sparkles
+  Settings, Sun, Moon, Bike, Users, Sparkles, Monitor
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../lib/AuthContext';
@@ -19,6 +19,7 @@ import AdminSettings    from '../../components/admin/AdminSettings';
 import AdminDrivers          from '../../components/admin/AdminDrivers';
 import AdminUsers             from '../../components/admin/AdminUsers';
 import AdminFeaturedDishes    from '../../components/admin/AdminFeaturedDishes';
+import AdminSitePhotos       from '../../components/admin/AdminSitePhotos';
 import '../../components/admin/AdminSettings.css';
 import '../../components/admin/AdminDrivers.css';
 import './Admin.css';
@@ -68,6 +69,7 @@ export default function Admin() {
     { to: '/admin/reservations', label: 'Reservations',   icon: <CalendarDays size={18} /> },
     { to: '/admin/reviews',      label: 'Reviews',        icon: <Star size={18} /> },
     { to: '/admin/gallery',      label: 'Gallery',        icon: <Images size={18} /> },
+    { to: '/admin/site-photos',  label: 'Site Photos',    icon: <Monitor size={18} /> },
     { to: '/admin/drivers',      label: 'Drivers',           icon: <Bike size={18}/> },
     { to: '/admin/featured',     label: "Chef's Selections",  icon: <Sparkles size={18}/> },
     { to: '/admin/users',        label: 'User Management',    icon: <Users size={18}/> },
@@ -166,6 +168,7 @@ export default function Admin() {
             <Route path="reservations"      element={<AdminReservations />} />
             <Route path="reviews"           element={<AdminReviews />} />
             <Route path="gallery"           element={<AdminGallery />} />
+            <Route path="site-photos"      element={<AdminSitePhotos />} />
             <Route path="settings"          element={<AdminSettings />} />
             <Route path="drivers"           element={<AdminDrivers />} />
             <Route path="featured"          element={<AdminFeaturedDishes />} />

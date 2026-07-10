@@ -15,7 +15,6 @@ import Home          from './pages/public/Home';
 import Menu          from './pages/public/Menu';
 import Gallery       from './pages/public/Gallery';
 import Reservation   from './pages/public/Reservation';
-import About         from './pages/public/About';
 import Reviews       from './pages/public/Reviews';
 import Auth          from './pages/public/Auth';
 import Profile       from './pages/public/Profile';
@@ -65,7 +64,6 @@ function AnimatedRoutes() {
         <Route path="/menu"       element={<DriverGuard><Menu /></DriverGuard>} />
         <Route path="/gallery"    element={<DriverGuard><Gallery /></DriverGuard>} />
         <Route path="/reservation" element={<DriverGuard><Reservation /></DriverGuard>} />
-        <Route path="/about"      element={<DriverGuard><About /></DriverGuard>} />
         <Route path="/reviews"    element={<DriverGuard><Reviews /></DriverGuard>} />
         <Route path="/profile/*"  element={<DriverGuard><Profile /></DriverGuard>} />
         <Route path="*" element={

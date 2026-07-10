@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Star, Send, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getReviews, createReview } from '../../lib/supabase';
+import { useSitePhotos } from '../../lib/useSitePhotos';
 import './Reviews.css';
 
 const FALLBACK_REVIEWS = [
@@ -34,6 +35,7 @@ function StarRating({ value, onChange, size = 28 }) {
 }
 
 export default function Reviews() {
+  const { photos: headerPhotos } = useSitePhotos('reviews_header');
   const [reviews, setReviews]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [submitted, setSubmitted] = useState(false);

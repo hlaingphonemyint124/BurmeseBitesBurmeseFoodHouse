@@ -114,12 +114,16 @@ export default function AdminGallery() {
     <div>
       <div className="admin-section-head">
         <div>
-          <h2>Gallery</h2>
-          <p>{images.length} images across all categories</p>
+          <h2>Gallery (Legacy)</h2>
+          <p>{images.length} legacy images — new photos should be added via <strong>Site Photos → Gallery</strong></p>
         </div>
         <button className="btn btn-primary" onClick={openModal}>
           <Plus size={15} /> Add Image
         </button>
+      </div>
+      <div style={{ background:'rgba(232,168,74,0.08)', border:'1px solid rgba(232,168,74,0.2)', borderRadius:10, padding:'12px 16px', marginBottom:20, fontSize:13, color:'var(--amber-dark)', display:'flex', alignItems:'center', gap:10 }}>
+        <span>💡</span>
+        <span>This is the legacy gallery table. To manage all website photos including hero slides and page headers, use the <strong>Site Photos</strong> section in the sidebar.</span>
       </div>
 
       {loading ? <div className="spinner" /> : (

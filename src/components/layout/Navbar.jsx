@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, Menu, X, LogIn, LogOut, LayoutDashboard,
   User, Settings, ChevronDown, Home, UtensilsCrossed,
-  Images, CalendarDays, BookOpen, Star, Shield, Sun, Moon
+  Images, CalendarDays, Star, Shield, Sun, Moon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCart } from '../../lib/CartContext';
@@ -17,7 +17,6 @@ const NAV_LINKS = [
   { to: '/menu',        label: 'Menu'      },
   { to: '/gallery',     label: 'Gallery'   },
   { to: '/reservation', label: 'Reserve'   },
-  { to: '/about',       label: 'Our Story' },
   { to: '/reviews',     label: 'Reviews'   },
 ];
 
@@ -26,7 +25,6 @@ const MOBILE_NAV = [
   { to: '/menu',        icon: <UtensilsCrossed size={18}/>, label: 'Menu'           },
   { to: '/gallery',     icon: <Images size={18}/>,          label: 'Gallery'        },
   { to: '/reservation', icon: <CalendarDays size={18}/>,    label: 'Reserve a Table'},
-  { to: '/about',       icon: <BookOpen size={18}/>,        label: 'Our Story'      },
   { to: '/reviews',     icon: <Star size={18}/>,            label: 'Reviews'        },
 ];
 

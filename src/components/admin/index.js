@@ -8,3 +8,4 @@ export { default as AdminSettings }     from './AdminSettings';
 export { default as AdminDrivers }      from './AdminDrivers';
 export { default as AdminUsers }        from './AdminUsers';
 export { default as AdminFeaturedDishes } from './AdminFeaturedDishes';
+export { default as AdminSitePhotos } from './AdminSitePhotos';

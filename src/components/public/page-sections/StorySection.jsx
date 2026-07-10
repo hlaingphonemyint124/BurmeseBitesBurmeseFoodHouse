@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useReveal } from '../../../lib/useReveal';
 
 export default function StorySection() {
@@ -30,7 +29,6 @@ export default function StorySection() {
             <p>Food is the memory that travels furthest. Every dish we serve is a bridge between two worlds.</p>
             <cite>— Daw Mya, Founder</cite>
           </div>
-          <Link to="/about" className="btn btn-outline">Read Our Full Story →</Link>
         </div>
       </div>
     </section>

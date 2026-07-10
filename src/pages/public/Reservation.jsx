@@ -4,6 +4,7 @@ import { useAuth } from '../../lib/AuthContext';
 import { Calendar, Clock, Users, CheckCircle, LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createReservation } from '../../lib/supabase';
+import { useSitePhotos } from '../../lib/useSitePhotos';
 import './Reservation.css';
 
 const TIME_SLOTS = [
@@ -14,6 +15,7 @@ const TIME_SLOTS = [
 const PARTY_SIZES = [1,2,3,4,5,6,7,8];
 
 export default function Reservation() {
+  const { photos: headerPhotos } = useSitePhotos('reservation_header');
   const [form, setForm] = useState({
     name:'', email:'', phone:'',
     date:'', time:'', party_size:2, special_notes:'',
@@ -57,7 +59,7 @@ export default function Reservation() {
     <div className="reservation-page">
       {/* Hero */}
       <div className="page-hero">
-        <div className="page-hero__bg" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1400&q=80)` }} />
+        <div className="page-hero__bg" style={{ backgroundImage: `url(${headerPhotos[0]?.image_url || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1400&q=80'})` }} />
         <div className="page-hero__overlay" />
         <div className="container page-hero__content">
           <span className="section-label" style={{ color: '#E8A84A' }}>Dining Experience</span>
