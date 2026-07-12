@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  ShoppingCart, Menu, X, LogIn, LogOut, LayoutDashboard,
+  ShoppingCart, Menu, X, LogIn, LogOut,
   User, Settings, ChevronDown, Home, UtensilsCrossed,
   Images, CalendarDays, Star, Shield, Sun, Moon
 } from 'lucide-react';
@@ -28,13 +28,6 @@ const MOBILE_NAV = [
   { to: '/reviews',     icon: <Star size={18}/>,            label: 'Reviews'        },
 ];
 
-const ADMIN_NAV = [
-  { to: '/admin',              icon: <LayoutDashboard size={18}/>, label: 'Dashboard Overview' },
-  { to: '/admin/menu',         icon: <UtensilsCrossed size={18}/>, label: 'Manage Menu'        },
-  { to: '/admin/reservations', icon: <CalendarDays size={18}/>,    label: 'Reservations'       },
-  { to: '/admin/reviews',      icon: <Star size={18}/>,            label: 'Reviews'            },
-  { to: '/admin/gallery',      icon: <Images size={18}/>,          label: 'Gallery'            },
-];
 
 export default function Navbar({ onCartOpen }) {
   const { totalItems }            = useCart();
@@ -112,6 +105,7 @@ export default function Navbar({ onCartOpen }) {
 
   const isHome = pathname === '/';
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Account';
+  const avatarUrl    = user?.user_metadata?.avatar_url || '';
 
   return (
     <>
@@ -172,7 +166,7 @@ export default function Navbar({ onCartOpen }) {
                   aria-expanded={profileOpen}
                 >
                   <div className="navbar__avatar" aria-hidden="true">
-                    {displayName.charAt(0).toUpperCase()}
+                    {avatarUrl ? <img src={avatarUrl} alt=""/> : displayName.charAt(0).toUpperCase()}
                   </div>
                   <span className="navbar__profile-name">{displayName}</span>
                   <ChevronDown
@@ -186,7 +180,7 @@ export default function Navbar({ onCartOpen }) {
                   <div className="navbar__dropdown" role="menu">
                     <div className="navbar__dropdown-header">
                       <div className="navbar__dropdown-avatar" aria-hidden="true">
-                        {displayName.charAt(0).toUpperCase()}
+                        {avatarUrl ? <img src={avatarUrl} alt=""/> : displayName.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <p className="navbar__dropdown-name">{displayName}</p>
@@ -306,18 +300,15 @@ export default function Navbar({ onCartOpen }) {
             <>
               <p className="sidenav__section-label" style={{ marginTop: 24 }}>Admin</p>
               <nav className="sidenav__nav">
-                {ADMIN_NAV.map(({ to, icon, label }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    className={`sidenav__link sidenav__link--admin ${
-                      pathname === to || pathname.startsWith(to + '/') ? 'sidenav__link--active' : ''
-                    }`}
-                    onClick={closeSideNav}
-                  >
-                    {icon} <span>{label}</span>
-                  </Link>
-                ))}
+                <Link
+                  to="/admin"
+                  className={`sidenav__link sidenav__link--admin ${
+                    pathname === '/admin' || pathname.startsWith('/admin/') ? 'sidenav__link--active' : ''
+                  }`}
+                  onClick={closeSideNav}
+                >
+                  <Shield size={18} /> <span>Admin Dashboard</span>
+                </Link>
               </nav>
             </>
           )}
@@ -328,7 +319,7 @@ export default function Navbar({ onCartOpen }) {
           {user ? (
             <div className="sidenav__user">
               <div className="sidenav__user-avatar" aria-hidden="true">
-                {displayName.charAt(0).toUpperCase()}
+                {avatarUrl ? <img src={avatarUrl} alt=""/> : displayName.charAt(0).toUpperCase()}
               </div>
               <div className="sidenav__user-info">
                 <p>{displayName}</p>

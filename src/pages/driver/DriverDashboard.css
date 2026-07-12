@@ -239,6 +239,10 @@
 .drv-profile-hero__avatar{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--amber-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:24px;font-weight:700;border:3px solid rgba(194,122,42,.25);}
 .drv-profile-hero__cam{position:absolute;bottom:1px;right:1px;width:24px;height:24px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;cursor:pointer;transition:background .2s;}
 .drv-profile-hero__cam:hover{background:var(--amber-dark);}
+.drv-profile-hero__cam:disabled{opacity:.6;cursor:default;}
+.drv-profile-hero__avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.drv-profile-hero__avatar-spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:drv-spin .7s linear infinite;}
+@keyframes drv-spin{to{transform:rotate(360deg);}}
 .drv-profile-hero__info{flex:1;min-width:0;}
 .drv-profile-hero__info h3{font-family:var(--font-display);font-size:18px;color:var(--charcoal);margin-bottom:2px;}
 .drv-profile-hero__info p{font-size:13px;color:var(--text-muted);}

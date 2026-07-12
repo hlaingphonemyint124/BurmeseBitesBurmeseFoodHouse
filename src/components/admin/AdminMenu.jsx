@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Plus, Pencil, Trash2, X, Search, ToggleLeft, ToggleRight,
-  Upload, FileText, Eye, CheckSquare, Square,
+  Upload, FileText, Eye, CheckSquare, Square, Link as LinkIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
+import './AdminComponents.css';
 
 const CATEGORIES = ['starters','mains','noodles','salads','desserts','drinks'];
 
@@ -12,6 +13,143 @@ const EMPTY_FORM = {
   name:'', description:'', price:'', category:'mains',
   spicy_level:0, is_vegetarian:false, available:true, image_url:''
 };
+
+/* ═══════════════════════════════════════════════════════════════════
+   UPLOAD HELPER — tries Supabase Storage, falls back to base64
+═══════════════════════════════════════════════════════════════════ */
+async function uploadFile(file, folder = 'menu') {
+  const ext      = file.name.split('.').pop();
+  const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('restaurant-images')
+    .upload(fileName, file, { cacheControl: '3600', upsert: false });
+  if (error) return null; // caller handles fallback
+  const { data: { publicUrl } } = supabase.storage
+    .from('restaurant-images')
+    .getPublicUrl(data.path);
+  return publicUrl;
+}
+
+function fileToBase64(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.readAsDataURL(file);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   IMAGE UPLOAD WIDGET — paste a URL or upload a photo from device
+═══════════════════════════════════════════════════════════════════ */
+function MenuImageUpload({ value, onChange }) {
+  const [mode, setMode]           = useState('file');
+  const [preview, setPreview]     = useState(value || '');
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver]   = useState(false);
+  const fileRef                   = useRef();
+
+  useEffect(() => { setPreview(value || ''); }, [value]);
+
+  const handleUrl = (e) => {
+    const v = e.target.value;
+    setPreview(v);
+    onChange(v);
+  };
+
+  const processFile = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file.');
+      return;
+    }
+    setUploading(true);
+    const local = URL.createObjectURL(file);
+    setPreview(local);
+    let url = await uploadFile(file, 'menu');
+    if (!url) {
+      url = await fileToBase64(file);
+      toast('Saved locally. Set up Supabase Storage bucket "restaurant-images" for production.', { icon: 'ℹ️' });
+    } else {
+      toast.success('Photo uploaded!');
+    }
+    onChange(url);
+    setPreview(url);
+    setUploading(false);
+  };
+
+  const handleFile = (e) => {
+    processFile(e.target.files[0]);
+    e.target.value = '';
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    processFile(e.dataTransfer.files?.[0]);
+  };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+      <div className="gallery-upload-toggle">
+        <button type="button"
+          className={`gallery-upload-toggle__btn ${mode==='file'?'gallery-upload-toggle__btn--active':''}`}
+          onClick={() => setMode('file')}>
+          <Upload size={13}/> Upload Photo
+        </button>
+        <button type="button"
+          className={`gallery-upload-toggle__btn ${mode==='url'?'gallery-upload-toggle__btn--active':''}`}
+          onClick={() => setMode('url')}>
+          <LinkIcon size={13}/> Paste URL
+        </button>
+      </div>
+
+      {mode === 'url' && (
+        <input className="form-input" placeholder="https://..." value={value} onChange={handleUrl} />
+      )}
+
+      {mode === 'file' && (
+        <>
+          <div
+            className="gallery-upload-dropzone"
+            style={{ cursor:'pointer', borderColor: dragOver ? 'var(--amber)' : undefined }}
+            onClick={() => fileRef.current.click()}
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+          >
+            {uploading ? (
+              <div style={{ textAlign:'center' }}>
+                <div className="spinner" style={{ margin:'0 auto 8px', width:24, height:24, borderWidth:2 }}/>
+                <p style={{ fontSize:12, color:'var(--text-muted)' }}>Uploading…</p>
+              </div>
+            ) : preview ? (
+              <p style={{ fontSize:13, color:'var(--jade-dark)', fontWeight:500 }}>✓ Photo ready. Click to change.</p>
+            ) : (
+              <>
+                <Upload size={26} style={{ color:'var(--amber-light)', marginBottom:8 }}/>
+                <p style={{ fontSize:13, fontWeight:500, color:'var(--brown)' }}>Click to choose a photo, or drag one here</p>
+                <p style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>JPG, PNG, WebP</p>
+              </>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleFile}/>
+        </>
+      )}
+
+      {preview && (
+        <div style={{ position:'relative', borderRadius:8, overflow:'hidden', height:140 }}>
+          <img src={preview} alt="Preview" style={{ width:'100%', height:'100%', objectFit:'cover' }}
+            onError={() => setPreview('')}/>
+          <button type="button"
+            style={{ position:'absolute', top:6, right:6, background:'rgba(0,0,0,0.6)', color:'#fff', border:'none', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}
+            onClick={() => { setPreview(''); onChange(''); }}>
+            <X size={13}/>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const CSV_STRUCTURE = [
   { col:'name',          type:'text',    req:true,  example:'Mohinga' },
@@ -401,10 +539,12 @@ export default function AdminMenu() {
                       <option value="3">3 — Hot 🌶🌶🌶</option>
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label>Image URL</label>
-                    <input className="form-input" placeholder="https://..."
-                      value={form.image_url} onChange={e => set('image_url', e.target.value)} />
+                  <div className="form-group full">
+                    <label>Photo</label>
+                    <MenuImageUpload
+                      value={form.image_url}
+                      onChange={url => set('image_url', url)}
+                    />
                   </div>
                   <div className="form-group" style={{ flexDirection:'row', alignItems:'center', gap:10 }}>
                     <input type="checkbox" id="chk-veg" checked={!!form.is_vegetarian} onChange={e => set('is_vegetarian', e.target.checked)} />

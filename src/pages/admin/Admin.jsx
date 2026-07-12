@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, UtensilsCrossed, CalendarDays,
-  Star, Images, LogOut, Menu, X, ChevronRight, ShoppingCart,
+  Star, LogOut, Menu, X, ChevronRight, ShoppingCart,
   Settings, Sun, Moon, Bike, Users, Sparkles, Monitor
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,7 +14,6 @@ import AdminMenu        from '../../components/admin/AdminMenu';
 import AdminOrders      from '../../components/admin/AdminOrders';
 import AdminReservations from '../../components/admin/AdminReservations';
 import AdminReviews     from '../../components/admin/AdminReviews';
-import AdminGallery     from '../../components/admin/AdminGallery';
 import AdminSettings    from '../../components/admin/AdminSettings';
 import AdminDrivers          from '../../components/admin/AdminDrivers';
 import AdminUsers             from '../../components/admin/AdminUsers';
@@ -68,7 +67,6 @@ export default function Admin() {
     { to: '/admin/menu',         label: 'Menu Items',     icon: <UtensilsCrossed size={18} /> },
     { to: '/admin/reservations', label: 'Reservations',   icon: <CalendarDays size={18} /> },
     { to: '/admin/reviews',      label: 'Reviews',        icon: <Star size={18} /> },
-    { to: '/admin/gallery',      label: 'Gallery',        icon: <Images size={18} /> },
     { to: '/admin/site-photos',  label: 'Site Photos',    icon: <Monitor size={18} /> },
     { to: '/admin/drivers',      label: 'Drivers',           icon: <Bike size={18}/> },
     { to: '/admin/featured',     label: "Chef's Selections",  icon: <Sparkles size={18}/> },
@@ -167,7 +165,6 @@ export default function Admin() {
             <Route path="menu"              element={<AdminMenu />} />
             <Route path="reservations"      element={<AdminReservations />} />
             <Route path="reviews"           element={<AdminReviews />} />
-            <Route path="gallery"           element={<AdminGallery />} />
             <Route path="site-photos"      element={<AdminSitePhotos />} />
             <Route path="settings"          element={<AdminSettings />} />
             <Route path="drivers"           element={<AdminDrivers />} />

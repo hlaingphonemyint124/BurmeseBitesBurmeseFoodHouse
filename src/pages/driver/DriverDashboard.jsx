@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../lib/AuthContext';
 import { useTheme } from '../../lib/ThemeContext';
 import { signOut, supabase } from '../../lib/supabase';
+import { uploadAvatarFile } from '../../lib/uploadAvatar';
 import './DriverDashboard.css';
 
 /* ── Google Maps loader ── */
@@ -238,7 +239,25 @@ function DriverProfile({ user }) {
   });
   const [saving, setSaving]   = useState(false);
   const [changed, setChanged] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const set = (k,v) => { setForm(f=>({...f,[k]:v})); setChanged(true); };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const { url, usedFallback } = await uploadAvatarFile(file);
+      const { error } = await supabase.auth.updateUser({ data: { avatar_url: url } });
+      if (error) throw error;
+      toast.success(usedFallback ? 'Photo saved.' : 'Profile photo updated!');
+    } catch (err) {
+      toast.error(err.message || 'Could not upload photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -263,9 +282,15 @@ function DriverProfile({ user }) {
       {/* Hero card */}
       <div className="drv-profile-hero">
         <div className="drv-profile-hero__avatar-wrap">
-          <div className="drv-profile-hero__avatar">{initials}</div>
-          <button className="drv-profile-hero__cam" onClick={()=>fileRef.current?.click()}><Camera size={12}/></button>
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={()=>toast('Photo upload coming soon!')}/>
+          <div className="drv-profile-hero__avatar">
+            {uploadingPhoto ? (
+              <span className="drv-profile-hero__avatar-spinner"/>
+            ) : user?.user_metadata?.avatar_url ? (
+              <img src={user.user_metadata.avatar_url} alt=""/>
+            ) : initials}
+          </div>
+          <button className="drv-profile-hero__cam" onClick={()=>fileRef.current?.click()} disabled={uploadingPhoto}><Camera size={12}/></button>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleAvatarUpload}/>
         </div>
         <div className="drv-profile-hero__info">
           <h3>{displayName}</h3>

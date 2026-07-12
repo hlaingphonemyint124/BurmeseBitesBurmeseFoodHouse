@@ -242,6 +242,56 @@
   flex-shrink: 0;
 }
 
+/* ── Gallery sub-category pills ── */
+.gallery-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.gallery-subtab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-1, #fff);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.gallery-subtab:hover {
+  border-color: rgba(194,122,42,0.35);
+  color: var(--amber-dark);
+}
+.gallery-subtab--active {
+  background: var(--amber) !important;
+  border-color: var(--amber) !important;
+  color: #fff !important;
+}
+.gallery-subtab__count {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0,0,0,0.15);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+.gallery-subtab--active .gallery-subtab__count {
+  background: rgba(255,255,255,0.28);
+}
+[data-theme="dark"] .gallery-subtab {
+  background: rgba(30,22,12,0.5);
+  border-color: rgba(232,168,74,0.15);
+  color: var(--text-muted);
+}
+[data-theme="dark"] .gallery-subtab:hover {
+  border-color: rgba(232,168,74,0.35);
+  color: var(--amber-light);
+}
+
 /* ── Section panel ── */
 .site-section-panel {
   background: var(--surface-1, #fff);

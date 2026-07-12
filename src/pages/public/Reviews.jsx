@@ -6,11 +6,16 @@ import { useSitePhotos } from '../../lib/useSitePhotos';
 import './Reviews.css';
 
 const FALLBACK_REVIEWS = [
-  { id:'r1', name:'Sarah M.', rating:5, comment:'The Ohn No Khao Swe was absolutely incredible — rich coconut broth and so much depth. Feels like a trip to Yangon. Will be back next week!', created_at: new Date().toISOString() },
-  { id:'r2', name:'James T.', rating:5, comment:'Laphet Thoke changed my life. I had never tried tea leaf salad before and now I crave it constantly. Truly unique and the service was warm and attentive.', created_at: new Date().toISOString() },
-  { id:'r3', name:'Priya K.', rating:4, comment:'Beautiful atmosphere and really authentic flavors. The samusa thoke was outstanding. Loved the attention to detail in every dish.', created_at: new Date().toISOString() },
-  { id:'r4', name:'David L.', rating:5, comment:'Best Burmese food outside of Myanmar. The mohinga is soul-warming perfection and the dessert selection is lovely. Highly recommend the shwe yin aye.', created_at: new Date().toISOString() },
-  { id:'r5', name:'Emma R.', rating:4, comment:'Such a gem of a restaurant. The lamb curry was melt-in-your-mouth tender and the staff were so knowledgeable about the dishes. Great vegetarian options too.', created_at: new Date().toISOString() },
+  { id:'r1',  name:'မောင်အောင်',   rating:5, comment:'ဒီဆိုင်ရဲ့ မုန့်ဟင်းခါးက အရမ်းအရသာရှိပါတယ်။ ဟင်းရည်ကလည်း မွှေးပြီး ဝန်ဆောင်မှုလည်း အရမ်းကောင်းပါတယ်။ နောက်တစ်ခေါက်လည်း သေချာလာစားဦးမှာပါ။', created_at: new Date().toISOString() },
+  { id:'r2',  name:'မခင်သန္တာ',    rating:5, comment:'မိသားစုနဲ့လာစားခဲ့တာ အရမ်းကျေနပ်ပါတယ်။ စားစရာတွေက လတ်ဆတ်ပြီး ဈေးနှုန်းလည်း သင့်တင့်ပါတယ်။', created_at: new Date().toISOString() },
+  { id:'r3',  name:'ကိုမင်းသူ',    rating:5, comment:'ရှမ်းခေါက်ဆွဲနဲ့ လက်ဖက်သုပ်ကို အရမ်းကြိုက်ပါတယ်။ အရသာက မူရင်းမြန်မာအရသာကို အပြည့်အဝခံစားရပါတယ်။', created_at: new Date().toISOString() },
+  { id:'r4',  name:'မအေးမြတ်',    rating:4, comment:'ဆိုင်အပြင်အဆင် သန့်ရှင်းပြီး အေးဆေးတဲ့ပတ်ဝန်းကျင်ရှိပါတယ်။ ဝန်ထမ်းတွေကလည်း ဖော်ရွေစွာ ဝန်ဆောင်မှုပေးပါတယ်။', created_at: new Date().toISOString() },
+  { id:'r5',  name:'ကိုဇော်ဝင်း',  rating:5, comment:'အစားအသောက်တွေက အရမ်းလတ်ဆတ်ပြီး Portion လည်း များပါတယ်။ ဈေးနှုန်းနဲ့ အရည်အသွေးကို နှိုင်းယှဉ်ရင် တန်ပါတယ်။', created_at: new Date().toISOString() },
+  { id:'r6',  name:'မစုစု',        rating:5, comment:'မုန့်တီ၊ အုန်းနို့ခေါက်ဆွဲနဲ့ ဖျော်ရည်တွေ အားလုံးအရသာရှိပါတယ်။ သူငယ်ချင်းတွေကိုလည်း အကြံပေးထားပါတယ်။', created_at: new Date().toISOString() },
+  { id:'r7',  name:'ကိုထက်အောင်',  rating:5, comment:'Online Order လုပ်ရတာလည်း အဆင်ပြေပြီး အစားအသောက်ရောက်လာချိန်မှာလည်း ပူပူနွေးနွေးရှိနေပါတယ်။', created_at: new Date().toISOString() },
+  { id:'r8',  name:'မဝင်းဝင်း',    rating:4, comment:'မြန်မာရိုးရာဟင်းလျာတွေ စုံစုံလင်လင်ရှိပြီး အရသာက အိမ်မှာချက်တဲ့ဟင်းလို ခံစားရပါတယ်။', created_at: new Date().toISOString() },
+  { id:'r9',  name:'ကိုရဲမင်း',    rating:5, comment:'Customer Service က အရမ်းကောင်းပါတယ်။ စားစရာတွေ အမြန်ရပြီး သန့်ရှင်းမှုလည်း အထူးကောင်းမွန်ပါတယ်။', created_at: new Date().toISOString() },
+  { id:'r10', name:'မသီရိ',        rating:5, comment:'ဒီဆိုင်က ကျွန်မအကြိုက်ဆုံး မြန်မာစားသောက်ဆိုင်ဖြစ်ပါတယ်။ အရသာ၊ ဝန်ဆောင်မှု၊ ပတ်ဝန်းကျင် အားလုံးကို အရမ်းသဘောကျပါတယ်။', created_at: new Date().toISOString() },
 ];
 
 function StarRating({ value, onChange, size = 28 }) {
@@ -70,8 +75,9 @@ export default function Reviews() {
       toast.success('Thank you for your review!', {
         style: { background: '#FAF6EE', color: '#1E1A14', border: '1px solid #E8A84A' },
       });
-    } catch {
-      toast.error('Submission failed. Please try again.');
+    } catch (err) {
+      console.error('Review submission failed:', err);
+      toast.error(err?.message || 'Submission failed. Please try again.');
     } finally {
       setSubmitting(false);
     }

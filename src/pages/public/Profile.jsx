@@ -13,6 +13,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../../lib/AuthContext';
 import { signOut, supabase } from '../../lib/supabase';
+import { uploadAvatarFile } from '../../lib/uploadAvatar';
 import './Profile.css';
 
 /* ════════════════════════════════════════════════════════
@@ -65,6 +66,7 @@ function ProfileSidebar() {
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const initials    = displayName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+  const avatarUrl    = user?.user_metadata?.avatar_url || '';
 
   const NAV = [
     { to:'/profile',              icon:<User size={16}/>,        label:'My Profile'     },
@@ -83,7 +85,7 @@ function ProfileSidebar() {
     <>
       <div className="psb__profile">
         <div className="psb__avatar-ring">
-          <div className="psb__avatar">{initials}</div>
+          <div className="psb__avatar">{avatarUrl ? <img src={avatarUrl} alt=""/> : initials}</div>
           <div className="psb__avatar-status"/>
         </div>
         <div className="psb__profile-text">
@@ -120,7 +122,7 @@ function ProfileSidebar() {
       {/* Mobile bar */}
       <button className="psb__mobile-bar" onClick={() => setOpen(v => !v)}>
         <div className="psb__mobile-bar-left">
-          <div className="psb__avatar psb__avatar--sm">{initials}</div>
+          <div className="psb__avatar psb__avatar--sm">{avatarUrl ? <img src={avatarUrl} alt=""/> : initials}</div>
           <span>{displayName}</span>
         </div>
         <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: '0.2s' }}/>
@@ -154,8 +156,9 @@ function ProfileHome() {
     bio:          user?.user_metadata?.bio          || '',
     website:      user?.user_metadata?.website      || '',
   });
-  const [saving, setSaving]   = useState(false);
-  const [changed, setChanged] = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [changed, setChanged]   = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Addresses
   const [addresses, setAddresses] = useState(
@@ -177,6 +180,26 @@ function ProfileHome() {
     if (error) { toast.error(error.message); return; }
     toast.success('Profile saved!');
     setChanged(false);
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    try {
+      const { url, usedFallback } = await uploadAvatarFile(file);
+      const { error } = await supabase.auth.updateUser({ data: { avatar_url: url } });
+      if (error) throw error;
+      toast.success(usedFallback
+        ? 'Photo saved. Set up Supabase Storage bucket "restaurant-images" for faster loading.'
+        : 'Profile photo updated!');
+    } catch (err) {
+      toast.error(err.message || 'Could not upload photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const saveAddress = async () => {
@@ -224,11 +247,17 @@ function ProfileHome() {
     <div className="p-main-content">
       <div className="p-page-hero">
         <div className="p-page-hero__avatar-wrap">
-          <div className="p-page-hero__avatar">{initials}</div>
-          <button className="p-page-hero__avatar-btn" onClick={() => fileRef.current?.click()} aria-label="Change photo">
+          <div className="p-page-hero__avatar">
+            {uploadingPhoto ? (
+              <span className="p-page-hero__avatar-spinner"/>
+            ) : user?.user_metadata?.avatar_url ? (
+              <img src={user.user_metadata.avatar_url} alt=""/>
+            ) : initials}
+          </div>
+          <button className="p-page-hero__avatar-btn" onClick={() => fileRef.current?.click()} aria-label="Change photo" disabled={uploadingPhoto}>
             <Camera size={13}/>
           </button>
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={() => toast('Photo upload coming soon!')}/>
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleAvatarUpload}/>
         </div>
         <div className="p-page-hero__info">
           <h2 className="p-page-hero__name">{form.full_name || 'Your Name'}</h2>

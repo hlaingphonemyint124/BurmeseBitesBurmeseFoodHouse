@@ -210,11 +210,12 @@ export default function Menu() {
                 <article key={item.id} className="menu-item-card">
                   <div className="menu-item-card__img">
                     <img
-                      src={imgSrc(idx)}
+                      src={item.image_url || imgSrc(idx)}
                       alt={item.name}
                       loading="lazy"
                       width={500}
                       height={210}
+                      onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = imgSrc(idx); }}
                     />
                     <div className="menu-item-card__badges">
                       {item.is_vegetarian && <span className="badge badge-veg">🌿 Veg</span>}

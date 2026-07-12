@@ -51,9 +51,16 @@ const SECTIONS = [
     maxItems: 1,
     aspectHint: '16:5 wide banner — 1400×440px recommended',
   },
+];
+
+/* Gallery is one sidebar tab that groups 4 sub-categories together.
+   Each sub-category still maps to its own logical_section in site_photos,
+   so the public Gallery page's filters (Header/Food/Ambiance/Events)
+   keep working exactly as before — only the admin UI is unified. */
+const GALLERY_SUBCATS = [
   {
     key: 'gallery_header',
-    label: 'Gallery Page Header',
+    label: 'Header',
     icon: <Images size={16}/>,
     description: 'Hero banner at the top of the public Gallery page.',
     fields: ['caption'],
@@ -62,32 +69,41 @@ const SECTIONS = [
   },
   {
     key: 'gallery_food',
-    label: 'Gallery — Food',
+    label: 'Food',
     icon: <Images size={16}/>,
-    description: 'Food photos shown in the public Gallery page under the Food filter.',
+    description: 'Food photos shown on the public Gallery page under the Food filter.',
     fields: ['caption'],
     maxItems: 30,
     aspectHint: 'Any ratio — square or portrait works well',
   },
   {
     key: 'gallery_ambiance',
-    label: 'Gallery — Ambiance',
+    label: 'Ambiance',
     icon: <Images size={16}/>,
-    description: 'Restaurant ambiance photos shown in the public Gallery page.',
+    description: 'Restaurant ambiance photos shown under the Ambiance filter.',
     fields: ['caption'],
     maxItems: 30,
     aspectHint: 'Landscape 3:2 — 900×600px recommended',
   },
   {
     key: 'gallery_events',
-    label: 'Gallery — Events',
+    label: 'Events',
     icon: <Images size={16}/>,
-    description: 'Event and special occasion photos shown in the public Gallery page.',
+    description: 'Event and special occasion photos shown under the Events filter.',
     fields: ['caption'],
     maxItems: 30,
     aspectHint: 'Any ratio',
   },
 ];
+
+SECTIONS.push({
+  key: 'gallery',
+  label: 'Gallery',
+  icon: <Images size={16}/>,
+  description: 'All public Gallery page photos, organized by Header, Food, Ambiance & Events.',
+  isGrouped: true,
+  subCategories: GALLERY_SUBCATS,
+});
 
 /* ═══════════════════════════════════════════════════════════════════
    UPLOAD HELPER — tries Supabase Storage, falls back to base64
@@ -205,12 +221,12 @@ function ImageUploadWidget({ value, onChange, folder }) {
 /* ═══════════════════════════════════════════════════════════════════
    ADD / EDIT MODAL
 ═══════════════════════════════════════════════════════════════════ */
-function PhotoModal({ section, editing, onClose, onSaved }) {
+function PhotoModal({ section, editing, nextOrder, onClose, onSaved }) {
   const isEdit = !!editing;
   const [form, setForm] = useState(
     editing
-      ? { image_url: editing.image_url, title: editing.title||'', tag: editing.tag||'', subtitle: editing.subtitle||'', caption: editing.caption||'', sort_order: editing.sort_order||0, active: editing.active !== false }
-      : { image_url:'', title:'', tag:'', subtitle:'', caption:'', sort_order:0, active:true }
+      ? { image_url: editing.image_url, title: editing.title||'', tag: editing.tag||'', subtitle: editing.subtitle||'', caption: editing.caption||'', active: editing.active !== false }
+      : { image_url:'', title:'', tag:'', subtitle:'', caption:'', active:true }
   );
   const [saving, setSaving] = useState(false);
 
@@ -225,7 +241,9 @@ function PhotoModal({ section, editing, onClose, onSaved }) {
       logical_section: section.key,
       image_url: form.image_url,
       caption:   form.caption || '',
-      sort_order: parseInt(form.sort_order) || 0,
+      // Auto order: new photos append to the end of the list automatically;
+      // existing photos keep their position (use the ↑ / ↓ arrows to reorder).
+      sort_order: isEdit ? editing.sort_order : nextOrder,
       active:    form.active,
     };
     if (section.fields?.includes('title'))    payload.title    = form.title;
@@ -296,17 +314,16 @@ function PhotoModal({ section, editing, onClose, onSaved }) {
               </div>
             )}
 
-            <div className="admin-form-grid">
-              <div className="form-group">
-                <label>Sort Order <span style={{ fontSize:11, color:'var(--text-muted)' }}>lower = first</span></label>
-                <input type="number" className="form-input" value={form.sort_order} onChange={e => set('sort_order', e.target.value)} />
-              </div>
-              <div className="form-group" style={{ display:'flex', alignItems:'flex-end', paddingBottom:2 }}>
-                <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', marginBottom:0 }}>
-                  <input type="checkbox" checked={form.active} onChange={e => set('active', e.target.checked)} />
-                  <span>Active / Visible</span>
-                </label>
-              </div>
+            <div className="form-group" style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
+              <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', marginBottom:0 }}>
+                <input type="checkbox" checked={form.active} onChange={e => set('active', e.target.checked)} />
+                <span>Active / Visible</span>
+              </label>
+              {!isEdit && (
+                <span style={{ fontSize:11, color:'var(--text-muted)' }}>
+                  Will be added as photo #{nextOrder + 1} — use ↑ / ↓ to reorder after saving
+                </span>
+              )}
             </div>
           </div>
           <div className="admin-modal__footer">
@@ -325,7 +342,7 @@ function PhotoModal({ section, editing, onClose, onSaved }) {
 /* ═══════════════════════════════════════════════════════════════════
    PHOTO CARD
 ═══════════════════════════════════════════════════════════════════ */
-function PhotoCard({ photo, section, onEdit, onDelete, onMove, isFirst, isLast }) {
+function PhotoCard({ photo, order, section, onEdit, onDelete, onMove, isFirst, isLast }) {
   return (
     <div className="site-photo-card">
       <div className="site-photo-card__img">
@@ -344,7 +361,7 @@ function PhotoCard({ photo, section, onEdit, onDelete, onMove, isFirst, isLast }
           {photo.title && <p className="site-photo-card__title">{photo.title}</p>}
           {photo.tag   && <span className="site-photo-card__tag">{photo.tag}</span>}
           {photo.caption && !photo.title && <p className="site-photo-card__caption">{photo.caption}</p>}
-          <span className="site-photo-card__order">#{photo.sort_order}</span>
+          <span className="site-photo-card__order">#{order}</span>
         </div>
         <div className="site-photo-card__actions">
           <button className="site-photo-card__btn" onClick={() => onMove(photo, 'up')} disabled={isFirst} title="Move up">
@@ -366,6 +383,44 @@ function PhotoCard({ photo, section, onEdit, onDelete, onMove, isFirst, isLast }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   GALLERY GROUP PANEL
+   One admin tab, four sub-category pills (Header / Food / Ambiance /
+   Events). Each pill just swaps which logical_section is shown —
+   everything else (upload, edit, delete, reorder) is the same
+   SectionPanel used by every other Site Photos section.
+═══════════════════════════════════════════════════════════════════ */
+function GalleryGroupPanel({ section, allPhotos, onRefresh }) {
+  const [subActive, setSubActive] = useState(section.subCategories[0].key);
+  const currentSub = section.subCategories.find(sc => sc.key === subActive) || section.subCategories[0];
+
+  return (
+    <div>
+      <div className="gallery-subtabs">
+        {section.subCategories.map(sc => {
+          const count = allPhotos.filter(p => p.logical_section === sc.key).length;
+          return (
+            <button
+              key={sc.key}
+              className={`gallery-subtab ${subActive === sc.key ? 'gallery-subtab--active' : ''}`}
+              onClick={() => setSubActive(sc.key)}
+            >
+              {sc.label}
+              {count > 0 && <span className="gallery-subtab__count">{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+      <SectionPanel
+        key={currentSub.key}
+        section={currentSub}
+        allPhotos={allPhotos}
+        onRefresh={onRefresh}
+      />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    SECTION PANEL
 ═══════════════════════════════════════════════════════════════════ */
 function SectionPanel({ section, allPhotos, onRefresh }) {
@@ -374,6 +429,9 @@ function SectionPanel({ section, allPhotos, onRefresh }) {
     .sort((a,b) => a.sort_order - b.sort_order);
   const [modal,   setModal]   = useState(null); // null | 'add' | photo-obj
   const atMax = photos.length >= section.maxItems;
+  // Auto order: new photos are appended after whatever the highest
+  // sort_order currently is — no manual number entry needed.
+  const nextOrder = photos.length ? Math.max(...photos.map(p => Number(p.sort_order) || 0)) + 1 : 0;
 
   const handleDelete = async (photo) => {
     if (!window.confirm(`Remove this photo from ${section.label}?`)) return;
@@ -441,6 +499,7 @@ function SectionPanel({ section, allPhotos, onRefresh }) {
             <PhotoCard
               key={p.id}
               photo={p}
+              order={idx + 1}
               section={section}
               onEdit={(ph) => setModal(ph)}
               onDelete={handleDelete}
@@ -456,6 +515,7 @@ function SectionPanel({ section, allPhotos, onRefresh }) {
         <PhotoModal
           section={section}
           editing={modal === 'add' ? null : modal}
+          nextOrder={nextOrder}
           onClose={() => setModal(null)}
           onSaved={() => { setModal(null); onRefresh(); }}
         />
@@ -557,7 +617,9 @@ create policy "site_photos_auth_delete" on site_photos
         {/* ── Section Tabs (left) ── */}
         <aside className="site-section-tabs">
           {SECTIONS.map(s => {
-            const count = photos.filter(p => p.logical_section === s.key).length;
+            const count = s.isGrouped
+              ? s.subCategories.reduce((sum, sc) => sum + photos.filter(p => p.logical_section === sc.key).length, 0)
+              : photos.filter(p => p.logical_section === s.key).length;
             return (
               <button
                 key={s.key}
@@ -579,12 +641,21 @@ create policy "site_photos_auth_delete" on site_photos
               <div className="spinner"/>
             </div>
           ) : (
-            <SectionPanel
-              key={active}
-              section={currentSection}
-              allPhotos={photos}
-              onRefresh={load}
-            />
+            currentSection.isGrouped ? (
+              <GalleryGroupPanel
+                key={active}
+                section={currentSection}
+                allPhotos={photos}
+                onRefresh={load}
+              />
+            ) : (
+              <SectionPanel
+                key={active}
+                section={currentSection}
+                allPhotos={photos}
+                onRefresh={load}
+              />
+            )
           )}
         </div>
       </div>
